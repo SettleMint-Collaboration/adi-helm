@@ -48,7 +48,9 @@ spec:
             - -c
             - |
               mkdir -p /data/db /data/static_files
+              {{- if not .Values.openshift.enabled }}
               chown -R 1000:1000 /data
+              {{- end }}
               chmod -R 775 /data
           volumeMounts:
             - name: data
@@ -57,6 +59,13 @@ spec:
           securityContext:
             runAsUser: 0
             runAsNonRoot: false
+          {{- else }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
           {{- end }}
       containers:
         - name: reth
