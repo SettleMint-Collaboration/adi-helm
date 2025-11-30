@@ -148,6 +148,13 @@ spec:
         labels:
           {{- include "adi-stack.labels" . | nindent 10 }}
           app.kubernetes.io/component: reth
+          {{- with .Values.reth.persistence.labels }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
+        {{- with .Values.reth.persistence.annotations }}
+        annotations:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
       spec:
         accessModes:
           - {{ .Values.reth.persistence.accessMode }}

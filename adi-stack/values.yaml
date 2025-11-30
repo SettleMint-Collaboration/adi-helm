@@ -1,5 +1,29 @@
 # ADI Stack Helm Chart Values
 # https://github.com/ADI-Foundation-Labs/ADI-Stack-EN-Setup-script
+#
+# =============================================================================
+# MULTI-CLOUD PERFORMANCE GUIDE
+# =============================================================================
+#
+# This chart supports AWS EKS, Google GKE, and Azure AKS with optimized
+# configurations for blockchain node workloads (high IOPS requirements).
+#
+# PERFORMANCE TIERS (for storage-intensive blockchain nodes):
+# -----------------------------------------------------------
+# | Tier   | IOPS     | Throughput | Use Case              |
+# |--------|----------|------------|------------------------|
+# | Low    | 3,000    | 125 MB/s   | Development/Testing    |
+# | Medium | 16,000   | 500 MB/s   | Testnet nodes          |
+# | High   | 64,000+  | 1,000 MB/s | Production mainnet     |
+#
+# STORAGE CLASS QUICK REFERENCE:
+# ------------------------------
+# AWS:   gp3 (low) | gp3+provisioned (medium) | io2 (high)
+# GKE:   standard-rwo (low) | premium-rwo (medium) | hyperdisk-extreme (high)
+# Azure: managed-csi (low) | managed-csi-premium (medium) | managed-csi-premium-v2 (high)
+#
+# See individual sections below for detailed cloud-specific configurations.
+# =============================================================================
 
 # -- Global settings
 global:
@@ -90,9 +114,65 @@ reth:
     # -- Storage size (mainnet requires ~1.5TB)
     size: 1500Gi
     # -- Storage class (empty string uses cluster default)
+    # If defined, storageClassName: <storageClass>
+    # If set to "-", storageClassName: "", which disables dynamic provisioning
+    # If undefined or empty, uses the default provisioner (gp2 on AWS, standard on GKE/Azure)
     storageClass: ""
     # -- Access mode
     accessMode: ReadWriteOnce
+    # -- Annotations for PVC (cloud-specific performance tuning)
+    annotations: {}
+    # -- Labels for PVC
+    labels: {}
+    #
+    # Cloud-Specific Storage Class Examples for Reth (High IOPS Required)
+    # ====================================================================
+    # Reth Ethereum nodes require high IOPS for optimal sync performance.
+    # Recommended: 50,000+ IOPS for production mainnet nodes.
+    #
+    # AWS EKS Storage Classes:
+    # ------------------------
+    # Low (Dev):
+    #   storageClass: "gp3"           # 3,000 IOPS baseline, 125 MB/s
+    #
+    # Medium (Testnet):
+    #   storageClass: "gp3"
+    #   annotations:
+    #     ebs.csi.aws.com/iops: "16000"
+    #     ebs.csi.aws.com/throughput: "500"
+    #
+    # High (Production Mainnet - RECOMMENDED):
+    #   storageClass: "io2"           # Up to 64,000 IOPS, sub-ms latency
+    #   annotations:
+    #     ebs.csi.aws.com/iops: "64000"
+    #
+    # GKE Storage Classes:
+    # --------------------
+    # Low (Dev):
+    #   storageClass: "standard-rwo"  # HDD-backed, development only
+    #
+    # Medium (Testnet):
+    #   storageClass: "premium-rwo"   # SSD, up to 100K IOPS
+    #
+    # High (Production Mainnet - RECOMMENDED):
+    #   storageClass: "hyperdisk-extreme"
+    #   annotations:
+    #     pd.csi.storage.gke.io/provisioned-iops-on-create: "100000"
+    #     pd.csi.storage.gke.io/provisioned-throughput-on-create: "2000"
+    #
+    # Azure AKS Storage Classes:
+    # --------------------------
+    # Low (Dev):
+    #   storageClass: "managed-csi"           # Standard HDD
+    #
+    # Medium (Testnet):
+    #   storageClass: "managed-csi-premium"   # Premium SSD
+    #
+    # High (Production Mainnet - RECOMMENDED):
+    #   storageClass: "managed-csi-premium-v2"  # Premium SSD v2
+    #   annotations:
+    #     disk.csi.azure.com/diskIOPSReadWrite: "64000"
+    #     disk.csi.azure.com/diskMBpsReadWrite: "1000"
 
   # -- Resource requests and limits (mainnet requirements)
   resources:
@@ -190,7 +270,27 @@ externalNode:
     # -- Access mode
     accessMode: ReadWriteOnce
     # -- Storage class (empty string uses cluster default)
+    # If defined, storageClassName: <storageClass>
+    # If set to "-", storageClassName: "", which disables dynamic provisioning
+    # If undefined or empty, uses the default provisioner (gp2 on AWS, standard on GKE/Azure)
     storageClass: ""
+    # -- Annotations for PVC (cloud-specific performance tuning)
+    annotations: {}
+    # -- Labels for PVC
+    labels: {}
+    #
+    # Cloud-Specific Storage Class Examples for External Node
+    # ========================================================
+    # External node has moderate IOPS requirements compared to Reth.
+    #
+    # AWS EKS:
+    #   storageClass: "gp3"  # Default gp3 is sufficient for most cases
+    #
+    # GKE:
+    #   storageClass: "premium-rwo"  # SSD for good performance
+    #
+    # Azure AKS:
+    #   storageClass: "managed-csi-premium"  # Premium SSD recommended
 
   # -- Resource requests and limits
   resources:
@@ -366,12 +466,30 @@ serviceAccount:
   name: ""
   # -- Annotations for service account
   annotations: {}
-  # AWS EKS IRSA:
-  # eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT:role/ROLE
-  # GKE Workload Identity:
-  # iam.gke.io/gcp-service-account: SA@PROJECT.iam.gserviceaccount.com
-  # Azure Workload Identity:
-  # azure.workload.identity/client-id: CLIENT_ID
+  #
+  # Cloud Workload Identity Annotations
+  # ====================================
+  # Enable secure, keyless authentication to cloud services.
+  #
+  # AWS EKS (IRSA - IAM Roles for Service Accounts):
+  # -------------------------------------------------
+  # annotations:
+  #   eks.amazonaws.com/role-arn: "arn:aws:iam::ACCOUNT_ID:role/adi-stack-role"
+  #   # Use STS regional endpoint (recommended for reliability):
+  #   eks.amazonaws.com/sts-regional-endpoints: "true"
+  #
+  # GKE (Workload Identity):
+  # ------------------------
+  # annotations:
+  #   iam.gke.io/gcp-service-account: "adi-stack@PROJECT_ID.iam.gserviceaccount.com"
+  #
+  # Azure AKS (Workload Identity):
+  # ------------------------------
+  # annotations:
+  #   azure.workload.identity/client-id: "CLIENT_ID"
+  #   azure.workload.identity/tenant-id: "TENANT_ID"
+  # Note: For Azure, also add to pod labels (via commonLabels):
+  #   azure.workload.identity/use: "true"
 
 # -- RBAC configuration
 rbac:
@@ -392,6 +510,43 @@ service:
     metrics: 3312
   # -- Service annotations
   annotations: {}
+  #
+  # Cloud-Specific Load Balancer Annotations
+  # =========================================
+  # Use type: LoadBalancer with these annotations for external access.
+  #
+  # AWS EKS (Network Load Balancer):
+  # --------------------------------
+  # type: LoadBalancer
+  # annotations:
+  #   service.beta.kubernetes.io/aws-load-balancer-type: "external"
+  #   service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
+  #   service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+  #   # Cross-zone load balancing for high availability:
+  #   service.beta.kubernetes.io/aws-load-balancer-attributes: "load_balancing.cross_zone.enabled=true"
+  #   # For internal LB (private subnet):
+  #   # service.beta.kubernetes.io/aws-load-balancer-scheme: "internal"
+  #
+  # GKE (Network Endpoint Groups):
+  # ------------------------------
+  # type: LoadBalancer
+  # annotations:
+  #   cloud.google.com/neg: '{"ingress": true}'
+  #   cloud.google.com/backend-config: '{"default": "adi-backend-config"}'
+  #   # Regional external passthrough NLB (GKE 1.32+):
+  #   cloud.google.com/l4-rbs: "enabled"
+  #
+  # Azure AKS (Standard Load Balancer):
+  # -----------------------------------
+  # type: LoadBalancer
+  # annotations:
+  #   service.beta.kubernetes.io/azure-load-balancer-internal: "false"
+  #   service.beta.kubernetes.io/azure-load-balancer-health-probe-interval: "5"
+  #   service.beta.kubernetes.io/azure-load-balancer-health-probe-num-of-probe: "2"
+  #   # For internal LB:
+  #   # service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+  #   # service.beta.kubernetes.io/azure-load-balancer-internal-subnet: "my-subnet"
+  #
   # -- Session affinity
   sessionAffinity: None
 
@@ -426,6 +581,41 @@ ingress:
     annotations: {}
     # nginx.ingress.kubernetes.io/ssl-redirect: "true"
     # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    #
+    # Cloud-Specific Ingress Annotations
+    # ===================================
+    #
+    # AWS ALB Ingress Controller:
+    # ---------------------------
+    # className: alb
+    # annotations:
+    #   alb.ingress.kubernetes.io/scheme: "internet-facing"
+    #   alb.ingress.kubernetes.io/target-type: "ip"
+    #   alb.ingress.kubernetes.io/healthcheck-path: "/health"
+    #   alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    #   alb.ingress.kubernetes.io/ssl-redirect: "443"
+    #   # WAF protection:
+    #   # alb.ingress.kubernetes.io/wafv2-acl-arn: "arn:aws:wafv2:region:account:..."
+    #
+    # GKE Ingress (GCE):
+    # ------------------
+    # className: gce
+    # annotations:
+    #   kubernetes.io/ingress.global-static-ip-name: "adi-stack-ip"
+    #   networking.gke.io/managed-certificates: "adi-stack-cert"
+    #   # Cloud Armor (DDoS protection):
+    #   # networking.gke.io/v1beta1.FrontendConfig: "adi-frontend-config"
+    #
+    # Azure Application Gateway:
+    # --------------------------
+    # className: azure/application-gateway
+    # annotations:
+    #   appgw.ingress.kubernetes.io/backend-protocol: "http"
+    #   appgw.ingress.kubernetes.io/ssl-redirect: "true"
+    #   appgw.ingress.kubernetes.io/connection-draining: "true"
+    #   appgw.ingress.kubernetes.io/connection-draining-timeout: "30"
+    #   # WAF policy:
+    #   # appgw.ingress.kubernetes.io/waf-policy-for-path: "/subscriptions/.../wafPolicies/..."
 
   # -- Gateway API specific
   gateway:
@@ -518,12 +708,90 @@ metrics:
 # -- Node scheduling
 # -- Node selector
 nodeSelector: {}
+#
+# Cloud-Optimized Node Selection
+# ===============================
+# For blockchain nodes, use storage-optimized instances with NVMe SSDs.
+#
+# AWS EKS (Storage-Optimized Instances):
+# --------------------------------------
+# nodeSelector:
+#   node.kubernetes.io/instance-type: "i4i.4xlarge"    # NVMe SSD, high IOPS
+#   # Or for cost optimization with good performance:
+#   # node.kubernetes.io/instance-type: "r6i.2xlarge"
+#   # Or use a node group label:
+#   # role: blockchain
+#
+# GKE (Performance Compute Class):
+# --------------------------------
+# nodeSelector:
+#   cloud.google.com/compute-class: "Performance"
+#   cloud.google.com/machine-family: "c3"
+#   # For local SSD (highest performance):
+#   # cloud.google.com/gke-local-ssd: "true"
+#
+# Azure AKS (High-Performance Node Pool):
+# ---------------------------------------
+# nodeSelector:
+#   kubernetes.azure.com/agentpool: "highperf"
+#   # Or by VM SKU (storage-optimized):
+#   # kubernetes.azure.com/vm-sku: "Standard_L8s_v3"
 
 # -- Tolerations
 tolerations: []
+#
+# Toleration Examples for Dedicated Node Pools:
+# ==============================================
+# tolerations:
+# - key: "dedicated"
+#   operator: "Equal"
+#   value: "blockchain"
+#   effect: "NoSchedule"
+# - key: "high-performance"
+#   operator: "Equal"
+#   value: "true"
+#   effect: "NoSchedule"
 
 # -- Affinity rules
 affinity: {}
+#
+# Affinity Examples for Storage-Optimized Nodes:
+# ===============================================
+#
+# AWS EKS - Prefer storage-optimized instances:
+# affinity:
+#   nodeAffinity:
+#     preferredDuringSchedulingIgnoredDuringExecution:
+#     - weight: 100
+#       preference:
+#         matchExpressions:
+#         - key: node.kubernetes.io/instance-type
+#           operator: In
+#           values:
+#           - i4i.4xlarge
+#           - i4i.8xlarge
+#           - i3.4xlarge
+#           - i3.8xlarge
+#
+# GKE - Require local SSD nodes:
+# affinity:
+#   nodeAffinity:
+#     requiredDuringSchedulingIgnoredDuringExecution:
+#       nodeSelectorTerms:
+#       - matchExpressions:
+#         - key: cloud.google.com/gke-local-ssd
+#           operator: Exists
+#
+# Anti-affinity to spread across zones:
+# affinity:
+#   podAntiAffinity:
+#     preferredDuringSchedulingIgnoredDuringExecution:
+#     - weight: 100
+#       podAffinityTerm:
+#         labelSelector:
+#           matchLabels:
+#             app.kubernetes.io/name: adi-stack
+#         topologyKey: topology.kubernetes.io/zone
 
 # -- Topology spread constraints
 topologySpreadConstraints: []
@@ -536,6 +804,53 @@ topologySpreadConstraints: []
 
 # -- Priority class name
 priorityClassName: ""
+#
+# Priority Class Configuration
+# =============================
+# For production blockchain nodes, use high-priority scheduling.
+#
+# Create a PriorityClass resource:
+# apiVersion: scheduling.k8s.io/v1
+# kind: PriorityClass
+# metadata:
+#   name: blockchain-critical
+# value: 1000000
+# globalDefault: false
+# description: "Critical priority for blockchain nodes"
+#
+# Then set:
+# priorityClassName: "blockchain-critical"
+#
+# Built-in classes (available on all clouds):
+# - system-cluster-critical (2000000000) - reserved for system components
+# - system-node-critical (2000001000) - reserved for node-critical pods
+
+# -- Pod annotations (applied to all pods)
+podAnnotations: {}
+#
+# Cloud-Specific Pod Annotations
+# ===============================
+#
+# All Clouds - Prevent Cluster Autoscaler eviction:
+# -------------------------------------------------
+# podAnnotations:
+#   cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
+#
+# AWS EKS - Fargate selector annotations:
+# ---------------------------------------
+# podAnnotations:
+#   eks.amazonaws.com/compute-type: "fargate"  # For Fargate scheduling
+#
+# GKE Autopilot - Resource guarantees:
+# ------------------------------------
+# podAnnotations:
+#   autopilot.gke.io/resource-adjustment: "disabled"
+#
+# Azure AKS - Workload Identity label (also needs SA annotation):
+# ---------------------------------------------------------------
+# Use commonLabels instead:
+# commonLabels:
+#   azure.workload.identity/use: "true"
 
 # -- Termination grace period
 terminationGracePeriodSeconds: 30

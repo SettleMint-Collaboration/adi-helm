@@ -187,6 +187,13 @@ spec:
         labels:
           {{- include "adi-stack.labels" . | nindent 10 }}
           app.kubernetes.io/component: external-node
+          {{- with .Values.externalNode.persistence.labels }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
+        {{- with .Values.externalNode.persistence.annotations }}
+        annotations:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
       spec:
         accessModes:
           - {{ .Values.externalNode.persistence.accessMode }}
