@@ -168,31 +168,6 @@ log_info "Values file: $VALUES_FILE"
 log_info "Namespace: $NAMESPACE"
 log_info "Release: $RELEASE_NAME"
 
-# Cloud provider configuration using associative arrays
-declare -A RETH_STORAGE_CLASS=(
-    [aws_low]="gp3"
-    [aws_medium]="gp3"
-    [aws_high]="io2"
-    [gke_low]="standard-rwo"
-    [gke_medium]="premium-rwo"
-    [gke_high]="hyperdisk-extreme"
-    [azure_low]="managed-csi"
-    [azure_medium]="managed-csi-premium"
-    [azure_high]="managed-csi-premium-v2"
-)
-
-declare -A EXTERNAL_STORAGE_CLASS=(
-    [aws_low]="gp3"
-    [aws_medium]="gp3"
-    [aws_high]="gp3"
-    [gke_low]="standard-rwo"
-    [gke_medium]="premium-rwo"
-    [gke_high]="premium-rwo"
-    [azure_low]="managed-csi"
-    [azure_medium]="managed-csi-premium"
-    [azure_high]="managed-csi-premium"
-)
-
 # Build cloud-specific configuration array
 CLOUD_ARGS=()
 
@@ -200,14 +175,38 @@ if [[ -n "$CLOUD_PROVIDER" ]]; then
     log_info "Cloud provider: $CLOUD_PROVIDER"
     log_info "Performance tier: $PERFORMANCE_TIER"
 
-    CONFIG_KEY="${CLOUD_PROVIDER}_${PERFORMANCE_TIER}"
+    # Get storage classes based on cloud provider and tier (compatible with bash 3.2+)
+    get_reth_storage_class() {
+        case "$1_$2" in
+            aws_low|aws_medium) echo "gp3" ;;
+            aws_high) echo "io2" ;;
+            gke_low) echo "standard-rwo" ;;
+            gke_medium) echo "premium-rwo" ;;
+            gke_high) echo "hyperdisk-extreme" ;;
+            azure_low) echo "managed-csi" ;;
+            azure_medium) echo "managed-csi-premium" ;;
+            azure_high) echo "managed-csi-premium-v2" ;;
+        esac
+    }
 
-    # Set storage classes
-    CLOUD_ARGS+=("--set" "reth.persistence.storageClass=${RETH_STORAGE_CLASS[$CONFIG_KEY]}")
-    CLOUD_ARGS+=("--set" "externalNode.persistence.storageClass=${EXTERNAL_STORAGE_CLASS[$CONFIG_KEY]}")
+    get_external_storage_class() {
+        case "$1_$2" in
+            aws_low|aws_medium|aws_high) echo "gp3" ;;
+            gke_low) echo "standard-rwo" ;;
+            gke_medium|gke_high) echo "premium-rwo" ;;
+            azure_low) echo "managed-csi" ;;
+            azure_medium|azure_high) echo "managed-csi-premium" ;;
+        esac
+    }
+
+    RETH_SC=$(get_reth_storage_class "$CLOUD_PROVIDER" "$PERFORMANCE_TIER")
+    EXTERNAL_SC=$(get_external_storage_class "$CLOUD_PROVIDER" "$PERFORMANCE_TIER")
+
+    CLOUD_ARGS+=("--set" "reth.persistence.storageClass=${RETH_SC}")
+    CLOUD_ARGS+=("--set" "externalNode.persistence.storageClass=${EXTERNAL_SC}")
 
     # Set performance annotations based on cloud and tier
-    case "$CONFIG_KEY" in
+    case "${CLOUD_PROVIDER}_${PERFORMANCE_TIER}" in
         aws_medium)
             CLOUD_ARGS+=("--set" "reth.persistence.annotations.ebs\.csi\.aws\.com/iops=\"16000\"")
             CLOUD_ARGS+=("--set" "reth.persistence.annotations.ebs\.csi\.aws\.com/throughput=\"500\"")
