@@ -78,8 +78,8 @@ spec:
               containerPort: 3312
               protocol: TCP
           env:
-            {{- if .Values.reth.enabled }}
-            # Using internal Reth node for L1 RPC
+            {{- if .Values.erigon.enabled }}
+            # Using internal Erigon L1 node for L1 RPC
             - name: GENERAL_L1_RPC_URL
               value: {{ include "adi-stack.l1RpcUrl" . | quote }}
             {{- else }}

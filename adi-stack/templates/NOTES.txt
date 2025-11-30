@@ -7,28 +7,34 @@ Namespace: {{ .Release.Namespace }}
                      ADI Stack External Node
 =======================================================================
 
-{{- if .Values.reth.enabled }}
+{{- if .Values.erigon.enabled }}
 
-=== INTERNAL ETHEREUM NODE (RETH) ===
+=== INTERNAL ETHEREUM NODE (ERIGON + CAPLIN) ===
 
-Reth is enabled and will provide L1 RPC for the external-node.
+Erigon is enabled with integrated Caplin consensus layer.
+This provides a complete Ethereum node for L1 RPC queries.
 
-Service: http://{{ include "adi-stack.fullname" . }}-reth:{{ .Values.reth.httpPort }}
+Service: http://{{ include "adi-stack.fullname" . }}-erigon:{{ .Values.erigon.httpPort }}
+{{- if .Values.erigon.caplin.enabled }}
+Beacon API: http://{{ include "adi-stack.fullname" . }}-erigon:{{ .Values.erigon.beaconApiPort }}
+{{- end }}
 
-IMPORTANT: Initial sync may take 6-24 hours depending on network conditions.
+IMPORTANT: Initial sync may take 2-4 hours with checkpoint sync, or 24-48 hours without.
 During this time, the external-node may show L1 RPC errors.
 
 Monitor sync progress:
-  kubectl logs -n {{ .Release.Namespace }} -f -l "app.kubernetes.io/name={{ include "adi-stack.name" . }},app.kubernetes.io/component=reth"
+  kubectl logs -n {{ .Release.Namespace }} -f -l "app.kubernetes.io/name={{ include "adi-stack.name" . }},app.kubernetes.io/component=erigon"
 
 Check sync status via RPC:
-  kubectl exec -n {{ .Release.Namespace }} -it {{ include "adi-stack.fullname" . }}-reth-0 -- \
+  kubectl exec -n {{ .Release.Namespace }} -it {{ include "adi-stack.fullname" . }}-erigon-0 -- \
     wget -qO- --header="Content-Type: application/json" \
       --post-data='{"jsonrpc":"2.0","method":"eth_syncing","params":[],"id":1}' \
-      http://localhost:{{ .Values.reth.httpPort }}
+      http://localhost:{{ .Values.erigon.httpPort }}
 
-Storage: {{ .Values.reth.persistence.size }} (ensure sufficient space for mainnet ~1.5TB)
+Storage: {{ .Values.erigon.persistence.size }} (ensure sufficient space for {{ .Values.erigon.pruneMode }} mode)
+Prune Mode: {{ .Values.erigon.pruneMode }} (archive: ~2TB, full: ~1TB, minimal: ~500GB)
 {{- end }}
+
 
 {{- if .Values.externalNode.enabled }}
 
@@ -94,8 +100,8 @@ CONFIGURATION:
 --------------
 Genesis Chain ID: {{ .Values.genesis.chainId }}
 Main Node RPC: {{ .Values.genesis.mainNodeRpcUrl }}
-{{- if .Values.reth.enabled }}
-L1 RPC URL: Using internal Reth node (http://{{ include "adi-stack.fullname" . }}-reth:{{ .Values.reth.httpPort }})
+{{- if .Values.erigon.enabled }}
+L1 RPC URL: Using internal Erigon node (http://{{ include "adi-stack.fullname" . }}-erigon:{{ .Values.erigon.httpPort }})
 {{ include "adi-stack.warnL1RpcConflict" . }}
 {{- else if not .Values.l1Rpc.existingSecret }}
 {{- if .Values.l1Rpc.url }}
@@ -103,7 +109,7 @@ L1 RPC URL: Configured via secret
 {{- else }}
 
 WARNING: L1 RPC URL is not configured!
-Please set l1Rpc.url, l1Rpc.existingSecret, or reth.enabled=true in your values.
+Please set l1Rpc.url, l1Rpc.existingSecret, or erigon.enabled=true in your values.
 {{- end }}
 {{- else }}
 L1 RPC URL: Using existing secret '{{ .Values.l1Rpc.existingSecret }}'

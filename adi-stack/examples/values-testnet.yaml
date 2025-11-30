@@ -7,13 +7,18 @@ genesis:
   chainId: "36900"
   mainNodeRpcUrl: "https://rpc.ab.testnet.adifoundation.ai/"
 
-# Reth Ethereum Node - Internal L1 RPC for Sepolia testnet
-reth:
+# Erigon Ethereum Node - Internal L1 RPC for Sepolia testnet
+# Includes integrated Caplin consensus layer
+erigon:
   enabled: true
   chain: sepolia # Use Sepolia testnet
-  syncMode: checkpoint
+  pruneMode: full
+  caplin:
+    enabled: true
+    # Checkpoint sync for faster initial sync (optional)
+    # checkpointSyncUrl: "https://sepolia.beaconstate.info/eth/v2/debug/beacon/states/finalized"
   persistence:
-    size: 100Gi # Sepolia is much smaller than mainnet
+    size: 500Gi # Sepolia is smaller than mainnet
     storageClass: ""
   resources:
     requests:
@@ -23,8 +28,8 @@ reth:
       cpu: "4"
       memory: "16Gi"
 
-# L1 RPC configuration - Not needed when reth.enabled=true
-# Uncomment below to use external RPC instead of internal Reth
+# L1 RPC configuration - Not needed when erigon.enabled=true
+# Uncomment below to use external RPC instead of internal Erigon
 # l1Rpc:
 #   url: "https://eth-sepolia.example.com"
 

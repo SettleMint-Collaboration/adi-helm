@@ -1,0 +1,55 @@
+{{- if .Values.erigon.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "adi-stack.fullname" . }}-erigon
+  labels:
+    {{- include "adi-stack.labels" . | nindent 4 }}
+    app.kubernetes.io/component: erigon
+  {{- with (include "adi-stack.annotations" .) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: http-rpc
+      port: {{ .Values.erigon.httpPort }}
+      targetPort: http-rpc
+      protocol: TCP
+    - name: ws-rpc
+      port: {{ .Values.erigon.wsPort }}
+      targetPort: ws-rpc
+      protocol: TCP
+    - name: p2p-tcp
+      port: {{ .Values.erigon.p2pPort }}
+      targetPort: p2p-tcp
+      protocol: TCP
+    - name: p2p-udp
+      port: {{ .Values.erigon.p2pPort }}
+      targetPort: p2p-udp
+      protocol: UDP
+    {{- if .Values.erigon.caplin.enabled }}
+    - name: caplin-disc
+      port: {{ .Values.erigon.caplinDiscoveryPort }}
+      targetPort: caplin-disc
+      protocol: UDP
+    - name: caplin-tcp
+      port: {{ .Values.erigon.caplinTcpPort }}
+      targetPort: caplin-tcp
+      protocol: TCP
+    - name: beacon-api
+      port: {{ .Values.erigon.beaconApiPort }}
+      targetPort: beacon-api
+      protocol: TCP
+    {{- end }}
+    {{- if .Values.erigon.metricsEnabled }}
+    - name: metrics
+      port: {{ .Values.erigon.metricsPort }}
+      targetPort: metrics
+      protocol: TCP
+    {{- end }}
+  selector:
+    {{- include "adi-stack.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: erigon
+{{- end }}

@@ -59,12 +59,13 @@ l1Rpc:
   # -- Key in existing secret
   existingSecretKey: "l1-rpc-url"
 
-# -- Reth Ethereum Node (optional internal L1 RPC)
-# When enabled, provides an internal Ethereum mainnet node for L1 RPC queries.
-# This eliminates the need for external RPC providers.
-reth:
-  # -- Enable Reth deployment (provides internal L1 RPC)
-  enabled: true
+# -- Erigon Ethereum Node (recommended internal L1 RPC)
+# When enabled, provides an internal Ethereum mainnet node with integrated
+# Caplin consensus layer. This eliminates the need for both external RPC
+# providers AND a separate consensus client (Lighthouse/Prysm).
+erigon:
+  # -- Enable Erigon deployment (provides internal L1 RPC with consensus)
+  enabled: false
 
   # -- Number of replicas (1 recommended for blockchain nodes)
   replicaCount: 1
@@ -72,31 +73,57 @@ reth:
   # -- Image configuration
   image:
     # -- Image registry
-    registry: ghcr.io
+    registry: docker.io
     # -- Image repository
-    repository: paradigmxyz/reth
+    repository: erigontech/erigon
     # -- Image tag
-    tag: "v1.1.0"
+    tag: "v3.0.0-alpha4"
     # -- Image pull policy
     pullPolicy: IfNotPresent
 
-  # -- Ethereum network
+  # -- Ethereum network (mainnet, sepolia, holesky)
   chain: mainnet
 
-  # -- Sync mode (checkpoint, snap, or full)
-  syncMode: checkpoint
+  # -- Prune mode (archive, full, minimal)
+  # archive: Full history (~2TB), full: Default (~1TB), minimal: Latest state (~500GB)
+  pruneMode: full
 
-  # -- Custom checkpoint sync URL (optional)
-  checkpointUrl: ""
+  # -- Caplin (integrated consensus layer) configuration
+  caplin:
+    # -- Enable Caplin (set to false to use external consensus client with --externalcl)
+    enabled: true
+    # -- Checkpoint sync URL for fast initial sync (optional)
+    # Example: https://beaconstate.info/eth/v2/debug/beacon/states/finalized
+    checkpointSyncUrl: ""
+    # -- Maximum peer count for consensus layer
+    maxPeerCount: 128
 
   # -- HTTP RPC port
   httpPort: 8545
 
-  # -- RPC API namespaces to expose
-  httpApi: "eth,net,web3"
+  # -- WebSocket RPC port
+  wsPort: 8546
 
-  # -- P2P port for peer discovery
+  # -- RPC API namespaces to expose
+  httpApi: "eth,net,web3,debug,trace,txpool"
+
+  # -- P2P port for execution layer peer discovery
   p2pPort: 30303
+
+  # -- Caplin discovery port (UDP, DISCV5)
+  caplinDiscoveryPort: 4000
+
+  # -- Caplin TCP port for consensus P2P
+  caplinTcpPort: 4001
+
+  # -- Beacon API port (for validators and monitoring)
+  beaconApiPort: 5555
+
+  # -- Enable metrics endpoint
+  metricsEnabled: true
+
+  # -- Metrics port
+  metricsPort: 6060
 
   # -- NAT traversal mode (none, any, extip:<IP>, upnp)
   # Use "none" if pod has direct public IP, "extip:<IP>" for known external IP
@@ -105,22 +132,13 @@ reth:
   # -- Custom bootnodes (optional)
   bootnodes: []
 
-  # -- Enable metrics endpoint
-  metricsEnabled: true
-
-  # -- Metrics port
-  metricsPort: 9001
-
   # -- Persistent storage for blockchain data
   persistence:
     # -- Enable persistent storage
     enabled: true
-    # -- Storage size (mainnet requires ~1.5TB)
-    size: 1500Gi
+    # -- Storage size (mainnet: ~2TB for full, ~500GB for minimal)
+    size: 2000Gi
     # -- Storage class (empty string uses cluster default)
-    # If defined, storageClassName: <storageClass>
-    # If set to "-", storageClassName: "", which disables dynamic provisioning
-    # If undefined or empty, uses the default provisioner (gp2 on AWS, standard on GKE/Azure)
     storageClass: ""
     # -- Access mode
     accessMode: ReadWriteOnce
@@ -129,56 +147,15 @@ reth:
     # -- Labels for PVC
     labels: {}
     #
-    # Cloud-Specific Storage Class Examples for Reth (High IOPS Required)
-    # ====================================================================
-    # Reth Ethereum nodes require high IOPS for optimal sync performance.
+    # Cloud-Specific Storage Class Examples for Erigon (High IOPS Required)
+    # =====================================================================
+    # Erigon Ethereum nodes require high IOPS for optimal sync performance.
     # Recommended: 50,000+ IOPS for production mainnet nodes.
     #
-    # AWS EKS Storage Classes:
-    # ------------------------
-    # Low (Dev):
-    #   storageClass: "gp3"           # 3,000 IOPS baseline, 125 MB/s
-    #
-    # Medium (Testnet):
-    #   storageClass: "gp3"
-    #   annotations:
-    #     ebs.csi.aws.com/iops: "16000"
-    #     ebs.csi.aws.com/throughput: "500"
-    #
-    # High (Production Mainnet - RECOMMENDED):
-    #   storageClass: "io2"           # Up to 64,000 IOPS, sub-ms latency
-    #   annotations:
-    #     ebs.csi.aws.com/iops: "64000"
-    #
-    # GKE Storage Classes:
-    # --------------------
-    # Low (Dev):
-    #   storageClass: "standard-rwo"  # HDD-backed, development only
-    #
-    # Medium (Testnet):
-    #   storageClass: "premium-rwo"   # SSD, up to 100K IOPS
-    #
-    # High (Production Mainnet - RECOMMENDED):
-    #   storageClass: "hyperdisk-extreme"
-    #   annotations:
-    #     pd.csi.storage.gke.io/provisioned-iops-on-create: "100000"
-    #     pd.csi.storage.gke.io/provisioned-throughput-on-create: "2000"
-    #
-    # Azure AKS Storage Classes:
-    # --------------------------
-    # Low (Dev):
-    #   storageClass: "managed-csi"           # Standard HDD
-    #
-    # Medium (Testnet):
-    #   storageClass: "managed-csi-premium"   # Premium SSD
-    #
-    # High (Production Mainnet - RECOMMENDED):
-    #   storageClass: "managed-csi-premium-v2"  # Premium SSD v2
-    #   annotations:
-    #     disk.csi.azure.com/diskIOPSReadWrite: "64000"
-    #     disk.csi.azure.com/diskMBpsReadWrite: "1000"
+    # See reth.persistence section for cloud-specific storage class examples.
+    # The same recommendations apply to Erigon.
 
-  # -- Resource requests and limits (mainnet requirements)
+  # -- Resource requests and limits (mainnet requirements with Caplin)
   resources:
     requests:
       cpu: "4"
@@ -215,7 +192,7 @@ reth:
     # -- Timeout for each probe
     timeoutSeconds: 10
     # -- Number of failures before pod is restarted
-    failureThreshold: 3
+    failureThreshold: 5
 
   # -- Readiness probe configuration
   readinessProbe:
@@ -237,7 +214,7 @@ reth:
   # -- Affinity rules
   affinity: {}
 
-  # -- Extra arguments for reth node command
+  # -- Extra arguments for erigon command
   extraArgs: []
 
 # -- External Node (StatefulSet)
