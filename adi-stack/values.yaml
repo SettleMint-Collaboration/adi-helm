@@ -98,6 +98,10 @@ reth:
   # -- P2P port for peer discovery
   p2pPort: 30303
 
+  # -- NAT traversal mode (none, any, extip:<IP>, upnp)
+  # Use "none" if pod has direct public IP, "extip:<IP>" for known external IP
+  nat: "none"
+
   # -- Custom bootnodes (optional)
   bootnodes: []
 

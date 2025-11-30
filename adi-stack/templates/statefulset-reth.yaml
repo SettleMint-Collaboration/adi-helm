@@ -46,7 +46,8 @@ spec:
             - -c
             - |
               mkdir -p /data/db /data/static_files
-              chmod -R 755 /data
+              chown -R 1000:1000 /data
+              chmod -R 775 /data
           volumeMounts:
             - name: data
               mountPath: /data
@@ -83,6 +84,10 @@ spec:
             - --metrics=0.0.0.0:{{ .Values.reth.metricsPort }}
             {{- end }}
             - --port={{ .Values.reth.p2pPort }}
+            - --discovery.addr=0.0.0.0
+            {{- if .Values.reth.nat }}
+            - --nat={{ .Values.reth.nat }}
+            {{- end }}
             {{- if and (eq .Values.reth.syncMode "checkpoint") .Values.reth.checkpointUrl }}
             - --debug.tip={{ .Values.reth.checkpointUrl }}
             {{- end }}
