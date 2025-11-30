@@ -9,17 +9,17 @@
 </p>
 <br/>
 <p align="center">
-<a href="https://github.com/ADI-Foundation-Labs/adi-helm/actions?query=branch%3Amain"><img src="https://github.com/ADI-Foundation-Labs/adi-helm/actions/workflows/lint.yml/badge.svg?event=push&branch=main" alt="CI status" /></a>
-<a href="https://github.com/ADI-Foundation-Labs/adi-helm" rel="nofollow"><img src="https://img.shields.io/badge/helm-v3%20%7C%20v4-blue" alt="Helm v3 | v4"></a>
-<a href="https://github.com/ADI-Foundation-Labs/adi-helm" rel="nofollow"><img src="https://img.shields.io/badge/kubernetes-1.24%2B-blue" alt="Kubernetes 1.24+"></a>
-<a href="https://github.com/ADI-Foundation-Labs/adi-helm" rel="nofollow"><img src="https://img.shields.io/github/license/ADI-Foundation-Labs/adi-helm" alt="License"></a>
-<a href="https://github.com/ADI-Foundation-Labs/adi-helm" rel="nofollow"><img src="https://img.shields.io/github/stars/ADI-Foundation-Labs/adi-helm" alt="stars"></a>
+<a href="https://github.com/settlemint/adi-helm/actions?query=branch%3Amain"><img src="https://github.com/settlemint/adi-helm/actions/workflows/release.yml/badge.svg?event=push&branch=main" alt="CI status" /></a>
+<a href="https://github.com/settlemint/adi-helm" rel="nofollow"><img src="https://img.shields.io/badge/helm-v3%20%7C%20v4-blue" alt="Helm v3 | v4"></a>
+<a href="https://github.com/settlemint/adi-helm" rel="nofollow"><img src="https://img.shields.io/badge/kubernetes-1.24%2B-blue" alt="Kubernetes 1.24+"></a>
+<a href="https://github.com/settlemint/adi-helm" rel="nofollow"><img src="https://img.shields.io/github/license/settlemint/adi-helm" alt="License"></a>
+<a href="https://github.com/settlemint/adi-helm" rel="nofollow"><img src="https://img.shields.io/github/stars/settlemint/adi-helm" alt="stars"></a>
 </p>
 
 <div align="center">
   <a href="https://github.com/ADI-Foundation-Labs/ADI-Network-Documentation">Documentation</a>
   <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-  <a href="https://github.com/ADI-Foundation-Labs/adi-helm/issues">Issues</a>
+  <a href="https://github.com/settlemint/adi-helm/issues">Issues</a>
   <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
   <a href="https://adifoundation.ai">ADI Foundation</a>
   <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
@@ -51,50 +51,41 @@ The ADI Stack Helm Chart provides a production-ready deployment solution for run
 - PersistentVolume provisioner support
 - (Optional) Prometheus Operator for ServiceMonitor
 
-> **Helm v4 Users**: This chart fully supports Helm v4 with Server-Side Apply (SSA), values schema validation, and OCI digest support. See [MIGRATION.md](MIGRATION.md) for upgrade details.
+> **Helm v4 Users**: This chart fully supports Helm v4 with Server-Side Apply (SSA), values schema validation, and OCI digest support.
 
 ### Installation
 
-Use the included install script for guided deployment:
+Add the Helm repository:
 
 ```bash
-# Clone the repository
-git clone https://github.com/ADI-Foundation-Labs/adi-helm.git
-cd adi-helm
-
-# Deploy to testnet (Sepolia)
-./install.sh testnet
-
-# Deploy to mainnet
-./install.sh mainnet
-
-# Deploy on OpenShift
-./install.sh testnet --openshift
-./install.sh mainnet --openshift
-
-# Deploy with cloud provider optimizations
-./install.sh mainnet --cloud aws --performance high
-./install.sh testnet --cloud gke --performance medium
-./install.sh mainnet --cloud azure --performance high
-
-# Deploy with cert-manager TLS
-./install.sh mainnet --cloud aws --cert-manager
+helm repo add adi-stack https://settlemint.github.io/adi-helm
+helm repo update
 ```
 
-Or install directly with Helm using layered values files:
+Install with Helm using layered values files:
 
 ```bash
 # Testnet deployment
-helm install adi-stack ./adi-stack \
+helm install adi-stack adi-stack/adi-stack \
   -n adi-stack --create-namespace \
-  -f adi-stack/examples/values-testnet.yaml
+  -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-testnet.yaml
 
 # Mainnet on AWS with high performance
-helm install adi-stack ./adi-stack \
+helm install adi-stack adi-stack/adi-stack \
   -n adi-stack --create-namespace \
-  -f adi-stack/examples/values-production.yaml \
-  -f adi-stack/examples/values-cloud-aws.yaml \
-  -f adi-stack/examples/values-performance-high.yaml
+  -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-production.yaml \
+  -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-cloud-aws.yaml \
+  -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-performance-high.yaml
+
+# OpenShift testnet
+helm install adi-stack adi-stack/adi-stack \
+  -n adi-stack --create-namespace \
+  -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-openshift-testnet.yaml
+
+# OpenShift mainnet
+helm install adi-stack adi-stack/adi-stack \
+  -n adi-stack --create-namespace \
+  -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-openshift-mainnet.yaml
 ```
 
 ## Configuration
@@ -203,7 +194,7 @@ helm lint ./adi-stack -f my-values.yaml --strict
 
 ## Contributing
 
-Contributions are welcome! Please read our contributing guidelines and submit pull requests to the [GitHub repository](https://github.com/ADI-Foundation-Labs/adi-helm).
+Contributions are welcome! Please read our contributing guidelines and submit pull requests to the [GitHub repository](https://github.com/settlemint/adi-helm).
 
 ## About
 
