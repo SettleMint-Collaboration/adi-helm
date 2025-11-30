@@ -1,0 +1,37 @@
+# Azure AKS Cloud Provider Values
+# Layer this on top of your base values file
+#
+# Usage:
+#   helm install adi-stack ./adi-stack \
+#     -f examples/values-testnet.yaml \
+#     -f examples/values-cloud-azure.yaml \
+#     -f examples/values-performance-medium.yaml
+
+# Ingress - Azure Application Gateway Ingress Controller (AGIC)
+ingress:
+  kubernetes:
+    className: azure-application-gateway
+    annotations:
+      appgw.ingress.kubernetes.io/backend-protocol: "http"
+      appgw.ingress.kubernetes.io/ssl-redirect: "true"
+      appgw.ingress.kubernetes.io/connection-draining: "true"
+      appgw.ingress.kubernetes.io/connection-draining-timeout: "30"
+      # WAF policy (create WAF policy first)
+      # appgw.ingress.kubernetes.io/waf-policy-for-path: "/subscriptions/.../wafPolicies/..."
+
+# Storage - AKS storage classes
+erigon:
+  persistence:
+    storageClass: "" # Uses cluster default (managed-csi)
+    # For better performance, use:
+    # storageClass: "managed-csi-premium"
+
+externalNode:
+  persistence:
+    storageClass: "" # Uses cluster default
+
+
+# Azure Workload Identity (optional)
+# serviceAccount:
+#   annotations:
+#     azure.workload.identity/client-id: "00000000-0000-0000-0000-000000000000"

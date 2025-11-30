@@ -59,6 +59,43 @@ spec:
             runAsUser: 0
             runAsNonRoot: false
           {{- end }}
+        {{- if .Values.proofSync.enabled }}
+        - name: init-proof-sync
+          image: {{ include "adi-stack.proofSync.image" . }}
+          imagePullPolicy: {{ .Values.proofSync.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Initial proof sync starting..."
+              azcopy sync "${PROOF_STORAGE_URL}" "${SHARED_PROOF_DIR}" --recursive --delete-destination=${DELETE_DESTINATION}
+              echo "Initial proof sync complete"
+          env:
+            - name: PROOF_STORAGE_URL
+              value: {{ .Values.proofSync.storageUrl | quote }}
+            - name: SHARED_PROOF_DIR
+              value: "/chain/db/shared"
+            - name: DELETE_DESTINATION
+              value: {{ .Values.proofSync.deleteDestination | quote }}
+            - name: AZCOPY_LOG_LOCATION
+              value: "/tmp"
+            - name: AZCOPY_JOB_PLAN_LOCATION
+              value: "/tmp"
+          {{- if not .Values.openshift.enabled }}
+          securityContext:
+            {{- toYaml .Values.proofSync.containerSecurityContext | nindent 12 }}
+          {{- else }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+          {{- end }}
+          volumeMounts:
+            - name: chain-data
+              mountPath: /chain
+        {{- end }}
       containers:
         - name: external-node
           image: {{ include "adi-stack.externalNode.image" . }}
@@ -161,6 +198,46 @@ spec:
             {{- with .Values.externalNode.extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
+        {{- if .Values.proofSync.enabled }}
+        - name: proof-sync
+          image: {{ include "adi-stack.proofSync.image" . }}
+          imagePullPolicy: {{ .Values.proofSync.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - /scripts/sync-proofs.sh
+          env:
+            - name: PROOF_STORAGE_URL
+              value: {{ .Values.proofSync.storageUrl | quote }}
+            - name: SHARED_PROOF_DIR
+              value: "/chain/db/shared"
+            - name: SYNC_INTERVAL
+              value: {{ .Values.proofSync.syncInterval | quote }}
+            - name: DELETE_DESTINATION
+              value: {{ .Values.proofSync.deleteDestination | quote }}
+            - name: AZCOPY_LOG_LOCATION
+              value: "/tmp"
+            - name: AZCOPY_JOB_PLAN_LOCATION
+              value: "/tmp"
+          resources:
+            {{- toYaml .Values.proofSync.resources | nindent 12 }}
+          {{- if not .Values.openshift.enabled }}
+          securityContext:
+            {{- toYaml .Values.proofSync.containerSecurityContext | nindent 12 }}
+          {{- else }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+          {{- end }}
+          volumeMounts:
+            - name: chain-data
+              mountPath: /chain
+            - name: sync-script
+              mountPath: /scripts
+              readOnly: true
+        {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -177,15 +254,21 @@ spec:
       topologySpreadConstraints:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.externalNode.extraVolumes }}
       volumes:
+        {{- if .Values.proofSync.enabled }}
+        - name: sync-script
+          configMap:
+            name: {{ include "adi-stack.fullname" . }}-sync-script
+            defaultMode: 0755
+        {{- end }}
+        {{- with .Values.externalNode.extraVolumes }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
   volumeClaimTemplates:
     - metadata:
         name: chain-data
         labels:
-          {{- include "adi-stack.labels" . | nindent 10 }}
+          {{- include "adi-stack.immutableLabels" . | nindent 10 }}
           app.kubernetes.io/component: external-node
           {{- with .Values.externalNode.persistence.labels }}
           {{- toYaml . | nindent 10 }}

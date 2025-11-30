@@ -29,15 +29,16 @@ Options:
   -o, --openshift         Use OpenShift-specific values
   -c, --cloud <provider>  Cloud provider: aws, gke, azure (optional)
   -p, --performance <tier> Performance tier: low, medium, high (default: medium)
+  -t, --cert-manager      Use cert-manager for TLS certificates
   -f, --values <file>     Additional values file to merge
   -d, --dry-run           Perform a dry run (template only)
   -u, --upgrade           Upgrade existing release instead of install
   -h, --help              Show this help message
 
 Cloud Provider Settings (-c):
-  aws     AWS EKS: gp3/io2 storage, NLB annotations
-  gke     Google GKE: premium-rwo/hyperdisk storage, NEG annotations
-  azure   Azure AKS: managed-csi-premium storage, Azure LB annotations
+  aws     AWS EKS: gp3/io2 storage, ALB ingress annotations
+  gke     Google GKE: premium-rwo/hyperdisk storage, GCE ingress
+  azure   Azure AKS: managed-csi-premium storage, App Gateway ingress
 
 Performance Tiers (-p):
   low     Development/Testing (3K IOPS, basic storage)
@@ -54,6 +55,7 @@ Examples:
   $0 mainnet -c aws -p high            # AWS with high-performance storage
   $0 testnet -c gke -p medium          # GKE with medium-performance storage
   $0 mainnet -c azure -p high          # Azure with premium storage
+  $0 testnet -c aws -t                 # AWS with cert-manager TLS
 
 EOF
     exit "${1:-0}"
@@ -78,6 +80,7 @@ RELEASE_NAME="adi-stack"
 OPENSHIFT=false
 CLOUD_PROVIDER=""
 PERFORMANCE_TIER="medium"
+CERT_MANAGER=false
 EXTRA_VALUES=""
 DRY_RUN=false
 UPGRADE=false
@@ -115,6 +118,10 @@ while [[ $# -gt 0 ]]; do
                 log_error "Invalid performance tier: $PERFORMANCE_TIER (must be low, medium, or high)"
             fi
             shift 2
+            ;;
+        -t|--cert-manager)
+            CERT_MANAGER=true
+            shift
             ;;
         -f|--values)
             EXTRA_VALUES="$2"
@@ -168,62 +175,39 @@ log_info "Values file: $VALUES_FILE"
 log_info "Namespace: $NAMESPACE"
 log_info "Release: $RELEASE_NAME"
 
-# Build cloud-specific configuration array
-CLOUD_ARGS=()
+# Build layered values files array
+VALUES_FILES=()
+VALUES_FILES+=("$VALUES_FILE")
 
+# Add cloud provider values file if specified
 if [[ -n "$CLOUD_PROVIDER" ]]; then
-    log_info "Cloud provider: $CLOUD_PROVIDER"
-    log_info "Performance tier: $PERFORMANCE_TIER"
+    CLOUD_VALUES="${CHART_DIR}/examples/values-cloud-${CLOUD_PROVIDER}.yaml"
+    if [[ -f "$CLOUD_VALUES" ]]; then
+        VALUES_FILES+=("$CLOUD_VALUES")
+        log_info "Cloud provider: $CLOUD_PROVIDER (using $CLOUD_VALUES)"
+    else
+        log_error "Cloud values file not found: $CLOUD_VALUES"
+    fi
+fi
 
-    # Get storage classes based on cloud provider and tier (compatible with bash 3.2+)
-    get_reth_storage_class() {
-        case "$1_$2" in
-            aws_low|aws_medium) echo "gp3" ;;
-            aws_high) echo "io2" ;;
-            gke_low) echo "standard-rwo" ;;
-            gke_medium) echo "premium-rwo" ;;
-            gke_high) echo "hyperdisk-extreme" ;;
-            azure_low) echo "managed-csi" ;;
-            azure_medium) echo "managed-csi-premium" ;;
-            azure_high) echo "managed-csi-premium-v2" ;;
-        esac
-    }
+# Add performance tier values file
+PERF_VALUES="${CHART_DIR}/examples/values-performance-${PERFORMANCE_TIER}.yaml"
+if [[ -f "$PERF_VALUES" ]]; then
+    VALUES_FILES+=("$PERF_VALUES")
+    log_info "Performance tier: $PERFORMANCE_TIER (using $PERF_VALUES)"
+else
+    log_warn "Performance values file not found: $PERF_VALUES (using defaults)"
+fi
 
-    get_external_storage_class() {
-        case "$1_$2" in
-            aws_low|aws_medium|aws_high) echo "gp3" ;;
-            gke_low) echo "standard-rwo" ;;
-            gke_medium|gke_high) echo "premium-rwo" ;;
-            azure_low) echo "managed-csi" ;;
-            azure_medium|azure_high) echo "managed-csi-premium" ;;
-        esac
-    }
-
-    RETH_SC=$(get_reth_storage_class "$CLOUD_PROVIDER" "$PERFORMANCE_TIER")
-    EXTERNAL_SC=$(get_external_storage_class "$CLOUD_PROVIDER" "$PERFORMANCE_TIER")
-
-    CLOUD_ARGS+=("--set" "reth.persistence.storageClass=${RETH_SC}")
-    CLOUD_ARGS+=("--set" "externalNode.persistence.storageClass=${EXTERNAL_SC}")
-
-    # Set performance annotations based on cloud and tier
-    case "${CLOUD_PROVIDER}_${PERFORMANCE_TIER}" in
-        aws_medium)
-            CLOUD_ARGS+=("--set" "reth.persistence.annotations.ebs\.csi\.aws\.com/iops=\"16000\"")
-            CLOUD_ARGS+=("--set" "reth.persistence.annotations.ebs\.csi\.aws\.com/throughput=\"500\"")
-            ;;
-        aws_high)
-            CLOUD_ARGS+=("--set" "reth.persistence.annotations.ebs\.csi\.aws\.com/iops=\"64000\"")
-            CLOUD_ARGS+=("--set" "externalNode.persistence.annotations.ebs\.csi\.aws\.com/iops=\"16000\"")
-            ;;
-        gke_high)
-            CLOUD_ARGS+=("--set" "reth.persistence.annotations.pd\.csi\.storage\.gke\.io/provisioned-iops-on-create=\"100000\"")
-            CLOUD_ARGS+=("--set" "reth.persistence.annotations.pd\.csi\.storage\.gke\.io/provisioned-throughput-on-create=\"2000\"")
-            ;;
-        azure_high)
-            CLOUD_ARGS+=("--set" "reth.persistence.annotations.disk\.csi\.azure\.com/diskIOPSReadWrite=\"64000\"")
-            CLOUD_ARGS+=("--set" "reth.persistence.annotations.disk\.csi\.azure\.com/diskMBpsReadWrite=\"1000\"")
-            ;;
-    esac
+# Add cert-manager values file if requested
+if [[ "$CERT_MANAGER" == true ]]; then
+    CERTMGR_VALUES="${CHART_DIR}/examples/values-tls-certmanager.yaml"
+    if [[ -f "$CERTMGR_VALUES" ]]; then
+        VALUES_FILES+=("$CERTMGR_VALUES")
+        log_info "TLS: Using cert-manager (letsencrypt-prod)"
+    else
+        log_error "cert-manager values file not found: $CERTMGR_VALUES"
+    fi
 fi
 
 # Build helm command using array (no eval for security)
@@ -241,18 +225,18 @@ fi
 
 HELM_CMD+=("$RELEASE_NAME" "$CHART_DIR")
 HELM_CMD+=("-n" "$NAMESPACE")
-HELM_CMD+=("-f" "$VALUES_FILE")
 
+# Add all layered values files
+for vf in "${VALUES_FILES[@]}"; do
+    HELM_CMD+=("-f" "$vf")
+done
+
+# Add extra values file if specified
 if [[ -n "$EXTRA_VALUES" ]]; then
     if [[ ! -f "$EXTRA_VALUES" ]]; then
         log_error "Extra values file not found: $EXTRA_VALUES"
     fi
     HELM_CMD+=("-f" "$EXTRA_VALUES")
-fi
-
-# Add cloud-specific settings
-if [[ ${#CLOUD_ARGS[@]} -gt 0 ]]; then
-    HELM_CMD+=("${CLOUD_ARGS[@]}")
 fi
 
 if [[ "$DRY_RUN" == false ]]; then
@@ -283,13 +267,13 @@ else
     echo "  1. Check pod status:"
     echo "     kubectl get pods -n $NAMESPACE"
     echo ""
-    echo "  2. View Reth sync progress:"
-    echo "     kubectl logs -n $NAMESPACE -l app.kubernetes.io/component=reth -f"
+    echo "  2. View Erigon sync progress:"
+    echo "     kubectl logs -n $NAMESPACE -l app.kubernetes.io/component=erigon -f"
     echo ""
     echo "  3. View external-node logs:"
     echo "     kubectl logs -n $NAMESPACE -l app.kubernetes.io/component=external-node -f"
     echo ""
     echo "  4. Access RPC endpoint:"
-    echo "     kubectl port-forward -n $NAMESPACE svc/${RELEASE_NAME}-adi-stack 3050:3050"
+    echo "     kubectl port-forward -n $NAMESPACE svc/${RELEASE_NAME} 3050:3050"
     echo ""
 fi

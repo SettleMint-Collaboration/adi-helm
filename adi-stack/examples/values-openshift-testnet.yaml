@@ -1,5 +1,9 @@
-# Example values for ADI Stack on OpenShift (Testnet/Sepolia)
-# Copy and customize for your environment
+# ADI Stack on OpenShift (Testnet/Sepolia)
+#
+# Usage:
+#   helm install adi-stack ./adi-stack \
+#     -f examples/values-openshift-testnet.yaml \
+#     -f examples/values-performance-medium.yaml
 
 # Genesis configuration - REQUIRED
 genesis:
@@ -7,28 +11,14 @@ genesis:
   chainId: "36900"
   mainNodeRpcUrl: "https://rpc.ab.testnet.adifoundation.ai/"
 
-# Erigon Ethereum Node - Internal L1 RPC for Sepolia testnet
-# Includes integrated Caplin consensus layer
+# Erigon - resources come from performance tier overlay
 erigon:
   enabled: true
-  image:
-    tag: "v3.0.0-alpha4" # Pin to specific version
-  chain: sepolia # Use Sepolia testnet
+  chain: sepolia
   pruneMode: full
   caplin:
     enabled: true
-    # Checkpoint sync for faster initial sync (optional)
-    # checkpointSyncUrl: "https://sepolia.beaconstate.info/eth/v2/debug/beacon/states/finalized"
-  persistence:
-    size: 500Gi # Sepolia is smaller than mainnet
-    storageClass: "" # Uses OpenShift default storage class
-  resources:
-    requests:
-      cpu: "2"
-      memory: "8Gi"
-    limits:
-      cpu: "4"
-      memory: "16Gi"
+    checkpointSyncUrl: "https://sepolia.beaconstate.info/eth/v2/debug/beacon/states/finalized"
 
 # L1 RPC configuration - Not needed when erigon.enabled=true
 # Uncomment below to use external RPC instead of internal Erigon
@@ -45,20 +35,7 @@ openshift:
     seccompProfile:
       type: RuntimeDefault
 
-# External node - testnet resources
-externalNode:
-  image:
-    tag: "latest"
-  resources:
-    requests:
-      memory: "2Gi"
-      cpu: "1"
-    limits:
-      memory: "4Gi"
-      cpu: "2"
-  persistence:
-    size: 50Gi
-    storageClass: "" # Uses cluster default
+# External node - resources come from performance tier overlay
 
 # Cloudflared
 cloudflared:

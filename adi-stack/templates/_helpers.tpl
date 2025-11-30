@@ -54,6 +54,18 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
+Labels for immutable resources (PVCs) - excludes version which changes
+*/}}
+{{- define "adi-stack.immutableLabels" -}}
+helm.sh/chart: {{ include "adi-stack.chart" . }}
+{{ include "adi-stack.selectorLabels" . }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- with .Values.commonLabels }}
+{{ toYaml . }}
+{{- end }}
+{{- end }}
+
+{{/*
 Create the name of the service account to use
 */}}
 {{- define "adi-stack.serviceAccountName" -}}

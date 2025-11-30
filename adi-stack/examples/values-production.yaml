@@ -1,196 +1,32 @@
-# Example values for ADI Stack production deployment
-# Copy and customize for your environment
+# ADI Stack production deployment (Mainnet)
+#
+# Usage:
+#   helm install adi-stack ./adi-stack \
+#     -f examples/values-production.yaml \
+#     -f examples/values-cloud-aws.yaml \
+#     -f examples/values-performance-high.yaml \
+#     -f examples/values-tls-certmanager.yaml
 
 # Genesis configuration - REQUIRED
 genesis:
-  bridgehubAddress: "0x0000000000000000000000000000000000000000"
-  chainId: "270"
-  mainNodeRpcUrl: "https://mainnet.example.com"
-
-# Erigon Ethereum Node - Internal L1 RPC (recommended for production)
-# Provides a self-hosted Ethereum mainnet node with integrated Caplin consensus layer,
-# eliminating the need for both external RPC dependencies AND a separate consensus client.
-erigon:
-  enabled: true
-  image:
-    tag: "v3.0.0-alpha4" # Pin to specific version
-  chain: mainnet
-  pruneMode: full # Use 'archive' for full historical data
-  caplin:
-    enabled: true
-    # Checkpoint sync for faster initial sync (optional)
-    # checkpointSyncUrl: "https://beaconstate.info/eth/v2/debug/beacon/states/finalized"
-    maxPeerCount: 128
-  persistence:
-    size: 2000Gi # Extra headroom for mainnet growth (~1TB for full, ~2TB for archive)
-    storageClass: "fast-ssd" # Use high-IOPS storage
-  resources:
-    requests:
-      cpu: "8"
-      memory: "32Gi"
-    limits:
-      cpu: "16"
-      memory: "64Gi"
-  nodeSelector:
-    node-type: compute
-  tolerations:
-    - key: "dedicated"
-      operator: "Equal"
-      value: "blockchain"
-      effect: "NoSchedule"
-
-# L1 RPC configuration - Not needed when erigon.enabled=true
-# Uncomment below to use external RPC instead of internal Erigon
-# l1Rpc:
-#   existingSecret:
-#     name: l1-rpc-credentials
-#     key: url
-
-# External node - production-grade resources
-externalNode:
-  image:
-    repository: harbor.sre.ideasoft.io/adi-chain/external-node
-    tag: "v0.10.0" # Pin to specific version
-    pullPolicy: IfNotPresent
-  resources:
-    requests:
-      memory: "8Gi"
-      cpu: "4"
-    limits:
-      memory: "16Gi"
-      cpu: "8"
-  persistence:
-    size: 500Gi
-    storageClass: "fast-ssd" # Use fast storage class
-  nodeSelector:
-    node-type: compute
-  tolerations:
-    - key: "dedicated"
-      operator: "Equal"
-      value: "adi-stack"
-      effect: "NoSchedule"
-  affinity:
-    podAntiAffinity:
-      preferredDuringSchedulingIgnoredDuringExecution:
-        - weight: 100
-          podAffinityTerm:
-            labelSelector:
-              matchLabels:
-                app.kubernetes.io/name: adi-stack
-            topologyKey: kubernetes.io/hostname
-
-# Cloudflared - use existing secret
-cloudflared:
-  enabled: true
-  existingSecret:
-    name: cloudflared-credentials
-    key: tunnel-token
-  resources:
-    requests:
-      memory: "128Mi"
-      cpu: "100m"
-    limits:
-      memory: "256Mi"
-      cpu: "200m"
-
-# Proof sync - production configuration
-proofSync:
-  enabled: true
-  existingSecret:
-    name: azure-storage-credentials
-    key: sas-token
-  azureStorageAccount: "adistorageproduction"
-  azureContainerName: "proofs"
-  schedule: "*/5 * * * *" # Sync every 5 minutes
-  resources:
-    requests:
-      memory: "256Mi"
-      cpu: "100m"
-    limits:
-      memory: "512Mi"
-      cpu: "500m"
-
-# Image pull secrets for private registry
-imagePullSecrets:
-  - name: harbor-registry-credentials
-
-# Service account with specific annotations
-serviceAccount:
-  create: true
-  annotations:
-    iam.gke.io/gcp-service-account: adi-stack@project.iam.gserviceaccount.com
+  bridgehubAddress: "0xc1662F0478e0E93Dc6CC321281Eb180A21036Da6"
+  chainId: "36900"
+  mainNodeRpcUrl: "https://rpc.ab.adifoundation.ai/"
 
 # Ingress - production with TLS
+# Cloud-specific settings (className, annotations) come from overlay files:
+#   -f values-cloud-aws.yaml (ALB)
+#   -f values-cloud-gke.yaml (GCE)
+#   -f values-cloud-azure.yaml (App Gateway)
+# TLS via cert-manager:
+#   -f values-tls-certmanager.yaml
 ingress:
   enabled: true
   type: auto
-  hostname: adi.production.example.com
+  hostname: mainnet.adi-atk.settlemint.com
   path: /
   pathType: Prefix
-  annotations:
-    kubernetes.io/ingress.class: nginx
-    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
-    cert-manager.io/cluster-issuer: letsencrypt-prod
   tls:
     enabled: true
-    secretName: adi-production-tls
+    secretName: "" # Let cert-manager create it, or specify existing secret
 
-# Network policies for security
-networkPolicy:
-  enabled: true
-  ingress:
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              network-policy: allow-adi
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: ingress-nginx
-      ports:
-        - protocol: TCP
-          port: 3050
-        - protocol: TCP
-          port: 3071
-  egress:
-    - to:
-        - ipBlock:
-            cidr: 0.0.0.0/0
-      ports:
-        - protocol: TCP
-          port: 443
-        - protocol: TCP
-          port: 8545
-
-# Pod disruption budget for HA
-podDisruptionBudget:
-  enabled: true
-  minAvailable: 1
-
-# Prometheus monitoring
-metrics:
-  serviceMonitor:
-    enabled: true
-    interval: 30s
-    scrapeTimeout: 10s
-    labels:
-      release: prometheus-stack
-
-# Security contexts - production hardened
-securityContext:
-  runAsNonRoot: true
-  runAsUser: 1000
-  runAsGroup: 1000
-  fsGroup: 1000
-  seccompProfile:
-    type: RuntimeDefault
-
-containerSecurityContext:
-  allowPrivilegeEscalation: false
-  capabilities:
-    drop:
-      - ALL
-  readOnlyRootFilesystem: true
-  runAsNonRoot: true
-  runAsUser: 1000

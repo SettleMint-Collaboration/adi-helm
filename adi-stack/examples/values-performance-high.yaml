@@ -1,0 +1,40 @@
+# High Performance Tier - Production Mainnet
+# Suitable for: Production mainnet nodes, high-availability deployments
+#
+# Usage:
+#   helm install adi-stack ./adi-stack \
+#     -f examples/values-production.yaml \
+#     -f examples/values-cloud-aws.yaml \
+#     -f examples/values-performance-high.yaml
+
+erigon:
+  resources:
+    requests:
+      cpu: "8"
+      memory: "32Gi"
+    limits:
+      cpu: "16"
+      memory: "64Gi"
+  maxPeers: 200
+
+externalNode:
+  resources:
+    requests:
+      cpu: "4"
+      memory: "8Gi"
+    limits:
+      cpu: "8"
+      memory: "16Gi"
+
+cloudflared:
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "256Mi"
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1

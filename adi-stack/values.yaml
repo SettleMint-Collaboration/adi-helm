@@ -65,7 +65,7 @@ l1Rpc:
 # providers AND a separate consensus client (Lighthouse/Prysm).
 erigon:
   # -- Enable Erigon deployment (provides internal L1 RPC with consensus)
-  enabled: false
+  enabled: true
 
   # -- Number of replicas (1 recommended for blockchain nodes)
   replicaCount: 1
@@ -77,7 +77,7 @@ erigon:
     # -- Image repository
     repository: erigontech/erigon
     # -- Image tag
-    tag: "v3.0.0-alpha4"
+    tag: "v3.3.0"
     # -- Image pull policy
     pullPolicy: IfNotPresent
 
@@ -94,9 +94,10 @@ erigon:
     enabled: true
     # -- Checkpoint sync URL for fast initial sync (optional)
     # Example: https://beaconstate.info/eth/v2/debug/beacon/states/finalized
-    checkpointSyncUrl: ""
-    # -- Maximum peer count for consensus layer
-    maxPeerCount: 128
+    checkpointSyncUrl: "https://beaconstate.info/eth/v2/debug/beacon/states/finalized"
+
+  # -- Maximum network peer count (optional, default 100)
+  maxPeers: 100
 
   # -- HTTP RPC port
   httpPort: 8545
@@ -136,8 +137,8 @@ erigon:
   persistence:
     # -- Enable persistent storage
     enabled: true
-    # -- Storage size (mainnet: ~2TB for full, ~500GB for minimal)
-    size: 2000Gi
+    # -- Storage size (500Gi works for testnet/minimal, increase for mainnet full/archive)
+    size: 2Ti
     # -- Storage class (empty string uses cluster default)
     storageClass: ""
     # -- Access mode
@@ -183,10 +184,23 @@ erigon:
       drop:
         - ALL
 
-  # -- Liveness probe configuration
+  # -- Startup probe configuration (allows long initial sync time)
+  # Liveness/readiness probes are disabled until startup probe succeeds.
+  # Default: 60s period * 2880 failures = 48 hours max startup time
+  startupProbe:
+    # -- Initial delay before probe starts
+    initialDelaySeconds: 30
+    # -- Period between probes
+    periodSeconds: 60
+    # -- Timeout for each probe
+    timeoutSeconds: 10
+    # -- Number of failures before pod is killed (60s * 2880 = 48 hours)
+    failureThreshold: 2880
+
+  # -- Liveness probe configuration (only runs after startup succeeds)
   livenessProbe:
-    # -- Initial delay before probe starts (long for initial sync)
-    initialDelaySeconds: 60
+    # -- Initial delay before probe starts
+    initialDelaySeconds: 10
     # -- Period between probes
     periodSeconds: 30
     # -- Timeout for each probe
@@ -194,10 +208,10 @@ erigon:
     # -- Number of failures before pod is restarted
     failureThreshold: 5
 
-  # -- Readiness probe configuration
+  # -- Readiness probe configuration (only runs after startup succeeds)
   readinessProbe:
     # -- Initial delay before probe starts
-    initialDelaySeconds: 30
+    initialDelaySeconds: 10
     # -- Period between probes
     periodSeconds: 10
     # -- Timeout for each probe
@@ -247,7 +261,7 @@ externalNode:
   # -- Persistent storage for blockchain data
   persistence:
     # -- Storage size
-    size: 100Gi
+    size: 500Gi
     # -- Access mode
     accessMode: ReadWriteOnce
     # -- Storage class (empty string uses cluster default)
@@ -556,8 +570,9 @@ ingress:
 
   # -- Kubernetes Ingress specific
   kubernetes:
-    # -- Ingress class name
-    className: nginx
+    # -- Ingress class name (nginx, alb, gce, azure/application-gateway, or empty for cluster default)
+    # Set to empty string "" to use cluster default, or omit ingressClassName entirely
+    className: ""
     # -- Ingress annotations
     annotations: {}
     # nginx.ingress.kubernetes.io/ssl-redirect: "true"

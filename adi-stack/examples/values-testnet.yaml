@@ -1,5 +1,10 @@
-# Example values for ADI Stack testnet deployment
-# Copy and customize for your environment
+# ADI Stack testnet deployment (Sepolia)
+#
+# Usage:
+#   helm install adi-stack ./adi-stack \
+#     -f examples/values-testnet.yaml \
+#     -f examples/values-cloud-aws.yaml \
+#     -f examples/values-performance-medium.yaml
 
 # Genesis configuration - REQUIRED
 genesis:
@@ -7,74 +12,19 @@ genesis:
   chainId: "36900"
   mainNodeRpcUrl: "https://rpc.ab.testnet.adifoundation.ai/"
 
-# Erigon Ethereum Node - Internal L1 RPC for Sepolia testnet
-# Includes integrated Caplin consensus layer
-erigon:
-  enabled: true
-  chain: sepolia # Use Sepolia testnet
-  pruneMode: full
-  caplin:
-    enabled: true
-    # Checkpoint sync for faster initial sync (optional)
-    # checkpointSyncUrl: "https://sepolia.beaconstate.info/eth/v2/debug/beacon/states/finalized"
-  persistence:
-    size: 500Gi # Sepolia is smaller than mainnet
-    storageClass: ""
-  resources:
-    requests:
-      cpu: "2"
-      memory: "8Gi"
-    limits:
-      cpu: "4"
-      memory: "16Gi"
-
-# L1 RPC configuration - Not needed when erigon.enabled=true
-# Uncomment below to use external RPC instead of internal Erigon
-# l1Rpc:
-#   url: "https://eth-sepolia.example.com"
-
-# External node settings
-externalNode:
-  image:
-    tag: "latest"
-  resources:
-    requests:
-      memory: "2Gi"
-      cpu: "1"
-    limits:
-      memory: "4Gi"
-      cpu: "2"
-  persistence:
-    size: 50Gi
-    storageClass: ""
-
-# Enable cloudflared for tunnel access
-cloudflared:
-  enabled: true
-  tunnelToken: "" # Set via --set cloudflared.tunnelToken=xxx
-  # Or use existing secret:
-  # existingSecret:
-  #   name: cloudflared-token
-  #   key: token
-
-# Disable proof-sync for testnet
-proofSync:
-  enabled: false
-
 # Ingress configuration
+# Cloud-specific settings (className, annotations) come from overlay files:
+#   -f values-cloud-aws.yaml (ALB)
+#   -f values-cloud-gke.yaml (GCE)
+#   -f values-cloud-azure.yaml (App Gateway)
+# TLS via cert-manager:
+#   -f values-tls-certmanager.yaml
 ingress:
   enabled: true
   type: auto
-  hostname: adi-testnet.example.com
+  hostname: testnet.adi-atk.settlemint.com
+  path: /
+  pathType: Prefix
   tls:
     enabled: true
-    secretName: adi-testnet-tls
-
-# Monitoring
-metrics:
-  serviceMonitor:
-    enabled: false # Enable if Prometheus Operator is installed
-
-# Resource limits suitable for testnet
-podDisruptionBudget:
-  enabled: false
+    secretName: "" # Let cert-manager create it, or specify existing secret

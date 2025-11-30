@@ -1,5 +1,9 @@
-# Example values for ADI Stack on OpenShift (Mainnet)
-# Copy and customize for your environment
+# ADI Stack on OpenShift (Mainnet)
+#
+# Usage:
+#   helm install adi-stack ./adi-stack \
+#     -f examples/values-openshift-mainnet.yaml \
+#     -f examples/values-performance-high.yaml
 
 # Genesis configuration - REQUIRED
 genesis:
@@ -7,30 +11,17 @@ genesis:
   chainId: "270"
   mainNodeRpcUrl: "https://mainnet.example.com"
 
-# Erigon Ethereum Node - Internal L1 RPC (recommended for production)
-# Provides a self-hosted Ethereum mainnet node with integrated Caplin consensus layer,
-# eliminating the need for both external RPC dependencies AND a separate consensus client.
+# Erigon - resources come from performance tier overlay
 erigon:
   enabled: true
   image:
-    tag: "v3.0.0-alpha4" # Pin to specific version
+    tag: "v3.3.0" # Pin to specific version for production
   chain: mainnet
   pruneMode: full # Use 'archive' for full historical data
   caplin:
     enabled: true
-    # Checkpoint sync for faster initial sync (optional)
-    # checkpointSyncUrl: "https://beaconstate.info/eth/v2/debug/beacon/states/finalized"
-    maxPeerCount: 128
-  persistence:
-    size: 2000Gi # Extra headroom for mainnet growth (~1TB for full, ~2TB for archive)
-    storageClass: "" # Uses OpenShift default storage class
-  resources:
-    requests:
-      cpu: "8"
-      memory: "32Gi"
-    limits:
-      cpu: "16"
-      memory: "64Gi"
+    checkpointSyncUrl: "https://beaconstate.info/eth/v2/debug/beacon/states/finalized"
+  maxPeers: 128
 
 # L1 RPC configuration - Not needed when erigon.enabled=true
 # Uncomment below to use external RPC instead of internal Erigon
@@ -49,20 +40,7 @@ openshift:
     seccompProfile:
       type: RuntimeDefault
 
-# External node
-externalNode:
-  image:
-    tag: "v0.10.0"
-  resources:
-    requests:
-      memory: "4Gi"
-      cpu: "2"
-    limits:
-      memory: "8Gi"
-      cpu: "4"
-  persistence:
-    size: 200Gi
-    storageClass: "" # Uses cluster default
+# External node - resources come from performance tier overlay
 
 # Cloudflared
 cloudflared:

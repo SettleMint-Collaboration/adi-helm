@@ -102,7 +102,6 @@ spec:
             - --caplin.discovery.addr=0.0.0.0
             - --caplin.discovery.port={{ .Values.erigon.caplinDiscoveryPort }}
             - --caplin.discovery.tcpport={{ .Values.erigon.caplinTcpPort }}
-            - --caplin.max-peer-count={{ .Values.erigon.caplin.maxPeerCount }}
             {{- if .Values.erigon.caplin.checkpointSyncUrl }}
             - --caplin.checkpoint-sync-url={{ .Values.erigon.caplin.checkpointSyncUrl }}
             {{- end }}
@@ -111,6 +110,9 @@ spec:
             - --beacon.api.port={{ .Values.erigon.beaconApiPort }}
             {{- else }}
             - --externalcl
+            {{- end }}
+            {{- if .Values.erigon.maxPeers }}
+            - --maxpeers={{ .Values.erigon.maxPeers }}
             {{- end }}
             {{- if .Values.erigon.metricsEnabled }}
             - --metrics
@@ -152,17 +154,24 @@ spec:
               containerPort: {{ .Values.erigon.metricsPort }}
               protocol: TCP
             {{- end }}
+          # Startup probe - allows up to 48 hours for initial sync
+          # Liveness/readiness probes are disabled until startup succeeds
+          startupProbe:
+            tcpSocket:
+              port: http-rpc
+            initialDelaySeconds: {{ .Values.erigon.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.erigon.startupProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.erigon.startupProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.erigon.startupProbe.failureThreshold }}
           livenessProbe:
-            httpGet:
-              path: /health
+            tcpSocket:
               port: http-rpc
             initialDelaySeconds: {{ .Values.erigon.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.erigon.livenessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.erigon.livenessProbe.timeoutSeconds }}
             failureThreshold: {{ .Values.erigon.livenessProbe.failureThreshold }}
           readinessProbe:
-            httpGet:
-              path: /health
+            tcpSocket:
               port: http-rpc
             initialDelaySeconds: {{ .Values.erigon.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.erigon.readinessProbe.periodSeconds }}
@@ -194,7 +203,7 @@ spec:
     - metadata:
         name: data
         labels:
-          {{- include "adi-stack.labels" . | nindent 10 }}
+          {{- include "adi-stack.immutableLabels" . | nindent 10 }}
           app.kubernetes.io/component: erigon
           {{- with .Values.erigon.persistence.labels }}
           {{- toYaml . | nindent 10 }}

@@ -1,0 +1,35 @@
+# Medium Performance Tier - Testnet/Staging
+# Suitable for: Testnet nodes, staging environments
+#
+# Usage:
+#   helm install adi-stack ./adi-stack \
+#     -f examples/values-testnet.yaml \
+#     -f examples/values-cloud-aws.yaml \
+#     -f examples/values-performance-medium.yaml
+
+erigon:
+  resources:
+    requests:
+      cpu: "2"
+      memory: "8Gi"
+    limits:
+      cpu: "4"
+      memory: "16Gi"
+
+externalNode:
+  resources:
+    requests:
+      cpu: "1"
+      memory: "2Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+
+cloudflared:
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"

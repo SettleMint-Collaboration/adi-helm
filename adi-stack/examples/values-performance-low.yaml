@@ -1,0 +1,35 @@
+# Low Performance Tier - Development/Testing
+# Suitable for: Local development, CI/CD pipelines, small testnets
+#
+# Usage:
+#   helm install adi-stack ./adi-stack \
+#     -f examples/values-testnet.yaml \
+#     -f examples/values-cloud-aws.yaml \
+#     -f examples/values-performance-low.yaml
+
+erigon:
+  resources:
+    requests:
+      cpu: "1"
+      memory: "4Gi"
+    limits:
+      cpu: "2"
+      memory: "8Gi"
+
+externalNode:
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+
+cloudflared:
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "64Mi"
+    limits:
+      cpu: "100m"
+      memory: "128Mi"
