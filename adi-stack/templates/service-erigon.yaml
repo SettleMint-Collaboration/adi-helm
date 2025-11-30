@@ -1,4 +1,29 @@
 {{- if .Values.erigon.enabled }}
+# Headless service for StatefulSet stable DNS identities
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "adi-stack.fullname" . }}-erigon-headless
+  labels:
+    {{- include "adi-stack.labels" . | nindent 4 }}
+    app.kubernetes.io/component: erigon
+  {{- with (include "adi-stack.annotations" .) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - name: http-rpc
+      port: {{ .Values.erigon.httpPort }}
+      targetPort: http-rpc
+      protocol: TCP
+  selector:
+    {{- include "adi-stack.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: erigon
+---
+# Regular ClusterIP service for RPC access
 apiVersion: v1
 kind: Service
 metadata:

@@ -6,6 +6,12 @@
 #     -f examples/values-cloud-aws.yaml \
 #     -f examples/values-performance-medium.yaml
 
+# Erigon L1 node - use Sepolia for testnet
+erigon:
+  chain: sepolia
+  caplin:
+    checkpointSyncUrl: "https://sepolia.beaconstate.info/eth/v2/debug/beacon/states/finalized"
+
 # Genesis configuration - REQUIRED
 genesis:
   bridgehubAddress: "0xc1662F0478e0E93Dc6CC321281Eb180A21036Da6"

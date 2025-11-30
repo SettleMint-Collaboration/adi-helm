@@ -209,7 +209,7 @@ Pod annotations for config/secret checksums
 */}}
 {{- define "adi-stack.podAnnotations" -}}
 checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
-{{- if not .Values.l1Rpc.existingSecret }}
+{{- if and (not .Values.l1Rpc.existingSecret) (not .Values.erigon.enabled) }}
 checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
 {{- end }}
 {{- range $key, $value := .Values.podAnnotations }}
