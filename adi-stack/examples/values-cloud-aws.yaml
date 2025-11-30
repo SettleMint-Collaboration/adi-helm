@@ -1,0 +1,34 @@
+# AWS EKS Cloud Provider Values
+# Layer this on top of your base values file
+#
+# Usage:
+#   helm install adi-stack ./adi-stack \
+#     -f examples/values-testnet.yaml \
+#     -f examples/values-cloud-aws.yaml \
+#     -f examples/values-performance-medium.yaml
+
+# Ingress - AWS ALB Controller
+ingress:
+  kubernetes:
+    className: alb
+    annotations:
+      alb.ingress.kubernetes.io/scheme: "internet-facing"
+      alb.ingress.kubernetes.io/target-type: "ip"
+      alb.ingress.kubernetes.io/healthcheck-path: "/health"
+      alb.ingress.kubernetes.io/healthcheck-port: "3071"
+      # Optional: SSL redirect (uncomment if using HTTPS)
+      # alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+      # alb.ingress.kubernetes.io/ssl-redirect: "443"
+      # alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:region:account:certificate/xxx"
+
+# Storage - EKS Auto Mode uses default storage class
+# Leave empty for cluster default, or specify gp3/io2 if available
+erigon:
+  persistence:
+    storageClass: "" # Uses cluster default (EKS Auto Mode compatible)
+    # For explicit storage class, uncomment:
+    # storageClass: "gp3"
+
+externalNode:
+  persistence:
+    storageClass: "" # Uses cluster default

@@ -3,7 +3,7 @@ name: adi-stack
 description: ADI Stack External Node for zkOS L2 blockchain
 type: application
 version: 0.1.0
-appVersion: "0.10.0"
+appVersion: "v0.10.1-b5"
 kubeVersion: ">=1.24.0-0"
 keywords:
   - blockchain
@@ -13,16 +13,11 @@ keywords:
   - zksync
   - ethereum
 maintainers:
-  - name: ADI Foundation Labs
-    url: https://github.com/ADI-Foundation-Labs
-home: https://github.com/ADI-Foundation-Labs/ADI-Stack-EN-Setup-script
+  - name: SettleMint
+    url: https://settlemint.com
+home: https://github.com/settlemint/adi-helm
 sources:
-  - https://github.com/ADI-Foundation-Labs/ADI-Stack-EN-Setup-script
-icon: https://raw.githubusercontent.com/ADI-Foundation-Labs/ADI-Stack-EN-Setup-script/main/logo.png
+  - https://github.com/settlemint/adi-helm
+icon: https://raw.githubusercontent.com/settlemint/adi-helm/main/adi.svg
 annotations:
   artifacthub.io/license: MIT
-  artifacthub.io/links: |
-    - name: Documentation
-      url: https://github.com/ADI-Foundation-Labs/ADI-Network-Documentation
-    - name: Source
-      url: https://github.com/ADI-Foundation-Labs/ADI-Stack-EN-Setup-script

@@ -1,0 +1,37 @@
+# Google GKE Cloud Provider Values
+# Layer this on top of your base values file
+#
+# Usage:
+#   helm install adi-stack ./adi-stack \
+#     -f examples/values-testnet.yaml \
+#     -f examples/values-cloud-gke.yaml \
+#     -f examples/values-performance-medium.yaml
+
+# Ingress - GCE Ingress Controller
+ingress:
+  kubernetes:
+    className: gce
+    annotations:
+      # Static IP (create with: gcloud compute addresses create adi-stack-ip --global)
+      # kubernetes.io/ingress.global-static-ip-name: "adi-stack-ip"
+      # Managed certificate (create ManagedCertificate resource first)
+      # networking.gke.io/managed-certificates: "adi-stack-cert"
+      # Cloud Armor (create security policy first)
+      # networking.gke.io/v1beta1.FrontendConfig: "adi-frontend-config"
+
+# Storage - GKE storage classes
+erigon:
+  persistence:
+    storageClass: "" # Uses cluster default (standard-rwo)
+    # For better performance, use:
+    # storageClass: "premium-rwo"
+
+externalNode:
+  persistence:
+    storageClass: "" # Uses cluster default
+
+
+# GKE Workload Identity (optional)
+# serviceAccount:
+#   annotations:
+#     iam.gke.io/gcp-service-account: "adi-stack@PROJECT.iam.gserviceaccount.com"

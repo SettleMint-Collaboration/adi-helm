@@ -54,6 +54,18 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
+Labels for immutable resources (PVCs) - excludes version which changes
+*/}}
+{{- define "adi-stack.immutableLabels" -}}
+helm.sh/chart: {{ include "adi-stack.chart" . }}
+{{ include "adi-stack.selectorLabels" . }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- with .Values.commonLabels }}
+{{ toYaml . }}
+{{- end }}
+{{- end }}
+
+{{/*
 Create the name of the service account to use
 */}}
 {{- define "adi-stack.serviceAccountName" -}}
@@ -118,14 +130,14 @@ Return the proper image name for proof-sync
 {{- end -}}
 
 {{/*
-Return the proper image name for reth
+Return the proper image name for erigon
 */}}
-{{- define "adi-stack.reth.image" -}}
-{{- $registry := .Values.reth.image.registry -}}
+{{- define "adi-stack.erigon.image" -}}
+{{- $registry := .Values.erigon.image.registry -}}
 {{- if .Values.global.imageRegistry -}}
 {{- $registry = .Values.global.imageRegistry -}}
 {{- end -}}
-{{- printf "%s/%s:%s" $registry .Values.reth.image.repository .Values.reth.image.tag -}}
+{{- printf "%s/%s:%s" $registry .Values.erigon.image.repository .Values.erigon.image.tag -}}
 {{- end -}}
 
 {{/*
@@ -153,33 +165,33 @@ l1-rpc-url
 {{/*
 Resolve L1 RPC URL
 Returns the L1 RPC URL based on configuration priority:
-1. reth.enabled=true → internal Reth service
+1. erigon.enabled=true → internal Erigon service
 2. l1Rpc.url → explicit URL
 3. l1Rpc.existingSecret → will be resolved from secret (empty here)
 */}}
 {{- define "adi-stack.l1RpcUrl" -}}
-{{- if .Values.reth.enabled -}}
-http://{{ include "adi-stack.fullname" . }}-reth:{{ .Values.reth.httpPort }}
+{{- if .Values.erigon.enabled -}}
+http://{{ include "adi-stack.fullname" . }}-erigon:{{ .Values.erigon.httpPort }}
 {{- else if .Values.l1Rpc.url -}}
 {{ .Values.l1Rpc.url }}
 {{- end -}}
 {{- end -}}
 
 {{/*
-Check if L1 RPC should use internal Reth
+Check if L1 RPC should use internal Erigon
 */}}
-{{- define "adi-stack.useInternalReth" -}}
-{{- .Values.reth.enabled -}}
+{{- define "adi-stack.useInternalL1" -}}
+{{- .Values.erigon.enabled -}}
 {{- end -}}
 
 {{/*
 Warn about L1 RPC configuration conflicts
 */}}
 {{- define "adi-stack.warnL1RpcConflict" -}}
-{{- if and .Values.reth.enabled (or .Values.l1Rpc.url .Values.l1Rpc.existingSecret) -}}
-WARNING: reth.enabled=true overrides l1Rpc.url and l1Rpc.existingSecret.
-         The external-node will use the internal Reth node at:
-         http://{{ include "adi-stack.fullname" . }}-reth:{{ .Values.reth.httpPort }}
+{{- if and .Values.erigon.enabled (or .Values.l1Rpc.url .Values.l1Rpc.existingSecret) -}}
+WARNING: erigon.enabled=true overrides l1Rpc.url and l1Rpc.existingSecret.
+         The external-node will use the internal Erigon node at:
+         http://{{ include "adi-stack.fullname" . }}-erigon:{{ .Values.erigon.httpPort }}
 {{- end -}}
 {{- end -}}
 
@@ -199,6 +211,9 @@ Pod annotations for config/secret checksums
 checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
 {{- if not .Values.l1Rpc.existingSecret }}
 checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+{{- end }}
+{{- range $key, $value := .Values.podAnnotations }}
+{{ $key }}: {{ $value | quote }}
 {{- end }}
 {{- end }}
 

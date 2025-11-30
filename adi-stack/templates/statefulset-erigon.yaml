@@ -1,0 +1,224 @@
+{{- if .Values.erigon.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "adi-stack.fullname" . }}-erigon
+  labels:
+    {{- include "adi-stack.labels" . | nindent 4 }}
+    app.kubernetes.io/component: erigon
+  {{- with (include "adi-stack.annotations" .) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  serviceName: {{ include "adi-stack.fullname" . }}-erigon
+  replicas: {{ .Values.erigon.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "adi-stack.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: erigon
+  template:
+    metadata:
+      labels:
+        {{- include "adi-stack.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: erigon
+      annotations:
+        {{- include "adi-stack.podAnnotations" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "adi-stack.serviceAccountName" . }}
+      {{- include "adi-stack.imagePullSecrets" . | nindent 6 }}
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName }}
+      {{- end }}
+      terminationGracePeriodSeconds: 300
+      {{- if not .Values.openshift.enabled }}
+      securityContext:
+        {{- toYaml .Values.erigon.podSecurityContext | nindent 8 }}
+      {{- else }}
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      {{- end }}
+      initContainers:
+        - name: init-directories
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              mkdir -p /data/erigon
+              {{- if not .Values.openshift.enabled }}
+              chown -R 1000:1000 /data
+              chmod -R 775 /data
+              {{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          {{- if not .Values.openshift.enabled }}
+          securityContext:
+            runAsUser: 0
+            runAsNonRoot: false
+          {{- else }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+          {{- end }}
+      containers:
+        - name: erigon
+          image: {{ include "adi-stack.erigon.image" . }}
+          imagePullPolicy: {{ .Values.erigon.image.pullPolicy }}
+          {{- if not .Values.openshift.enabled }}
+          securityContext:
+            {{- toYaml .Values.erigon.containerSecurityContext | nindent 12 }}
+          {{- else }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+          {{- end }}
+          args:
+            - --datadir=/data/erigon
+            - --chain={{ .Values.erigon.chain }}
+            - --prune.mode={{ .Values.erigon.pruneMode }}
+            - --http
+            - --http.addr=0.0.0.0
+            - --http.port={{ .Values.erigon.httpPort }}
+            - --http.api={{ .Values.erigon.httpApi }}
+            - --http.vhosts=*
+            - --http.corsdomain=*
+            - --ws
+            - --ws.port={{ .Values.erigon.wsPort }}
+            - --port={{ .Values.erigon.p2pPort }}
+            {{- if .Values.erigon.nat }}
+            - --nat={{ .Values.erigon.nat }}
+            {{- end }}
+            {{- if .Values.erigon.caplin.enabled }}
+            - --caplin.discovery.addr=0.0.0.0
+            - --caplin.discovery.port={{ .Values.erigon.caplinDiscoveryPort }}
+            - --caplin.discovery.tcpport={{ .Values.erigon.caplinTcpPort }}
+            {{- if .Values.erigon.caplin.checkpointSyncUrl }}
+            - --caplin.checkpoint-sync-url={{ .Values.erigon.caplin.checkpointSyncUrl }}
+            {{- end }}
+            - --beacon.api=beacon,builder,config,debug,node,validator,lighthouse
+            - --beacon.api.addr=0.0.0.0
+            - --beacon.api.port={{ .Values.erigon.beaconApiPort }}
+            {{- else }}
+            - --externalcl
+            {{- end }}
+            {{- if .Values.erigon.maxPeers }}
+            - --maxpeers={{ .Values.erigon.maxPeers }}
+            {{- end }}
+            {{- if .Values.erigon.metricsEnabled }}
+            - --metrics
+            - --metrics.addr=0.0.0.0
+            - --metrics.port={{ .Values.erigon.metricsPort }}
+            {{- end }}
+            {{- range .Values.erigon.bootnodes }}
+            - --bootnodes={{ . }}
+            {{- end }}
+            {{- range .Values.erigon.extraArgs }}
+            - {{ . }}
+            {{- end }}
+          ports:
+            - name: http-rpc
+              containerPort: {{ .Values.erigon.httpPort }}
+              protocol: TCP
+            - name: ws-rpc
+              containerPort: {{ .Values.erigon.wsPort }}
+              protocol: TCP
+            - name: p2p-tcp
+              containerPort: {{ .Values.erigon.p2pPort }}
+              protocol: TCP
+            - name: p2p-udp
+              containerPort: {{ .Values.erigon.p2pPort }}
+              protocol: UDP
+            {{- if .Values.erigon.caplin.enabled }}
+            - name: caplin-disc
+              containerPort: {{ .Values.erigon.caplinDiscoveryPort }}
+              protocol: UDP
+            - name: caplin-tcp
+              containerPort: {{ .Values.erigon.caplinTcpPort }}
+              protocol: TCP
+            - name: beacon-api
+              containerPort: {{ .Values.erigon.beaconApiPort }}
+              protocol: TCP
+            {{- end }}
+            {{- if .Values.erigon.metricsEnabled }}
+            - name: metrics
+              containerPort: {{ .Values.erigon.metricsPort }}
+              protocol: TCP
+            {{- end }}
+          # Startup probe - allows up to 48 hours for initial sync
+          # Liveness/readiness probes are disabled until startup succeeds
+          startupProbe:
+            tcpSocket:
+              port: http-rpc
+            initialDelaySeconds: {{ .Values.erigon.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.erigon.startupProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.erigon.startupProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.erigon.startupProbe.failureThreshold }}
+          livenessProbe:
+            tcpSocket:
+              port: http-rpc
+            initialDelaySeconds: {{ .Values.erigon.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.erigon.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.erigon.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.erigon.livenessProbe.failureThreshold }}
+          readinessProbe:
+            tcpSocket:
+              port: http-rpc
+            initialDelaySeconds: {{ .Values.erigon.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.erigon.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.erigon.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.erigon.readinessProbe.failureThreshold }}
+          resources:
+            {{- toYaml .Values.erigon.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      {{- with .Values.erigon.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.erigon.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.erigon.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          {{- include "adi-stack.immutableLabels" . | nindent 10 }}
+          app.kubernetes.io/component: erigon
+          {{- with .Values.erigon.persistence.labels }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
+        {{- with .Values.erigon.persistence.annotations }}
+        annotations:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      spec:
+        accessModes:
+          - {{ .Values.erigon.persistence.accessMode }}
+        {{- if .Values.erigon.persistence.storageClass }}
+        storageClassName: {{ .Values.erigon.persistence.storageClass | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.erigon.persistence.size }}
+{{- end }}
