@@ -273,7 +273,7 @@ else
     echo "  3. View external-node logs:"
     echo "     kubectl logs -n $NAMESPACE -l app.kubernetes.io/component=external-node -f"
     echo ""
-    echo "  4. Access RPC endpoint:"
-    echo "     kubectl port-forward -n $NAMESPACE svc/${RELEASE_NAME} 3050:3050"
+    echo "  4. Access RPC endpoint (get service name from 'helm status ${RELEASE_NAME} -n ${NAMESPACE}'):"
+    echo "     kubectl port-forward -n $NAMESPACE svc/${RELEASE_NAME}-adi-stack 3050:3050"
     echo ""
 fi
