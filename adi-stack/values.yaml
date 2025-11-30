@@ -246,7 +246,7 @@ externalNode:
     # -- Image repository
     repository: adi-chain/external-node
     # -- Image tag (defaults to Chart.appVersion)
-    tag: ""
+    tag: "v0.10.1-b5"
     # -- Image pull policy
     pullPolicy: IfNotPresent
 
