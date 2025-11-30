@@ -27,10 +27,22 @@ Options:
   -n, --namespace <ns>    Kubernetes namespace (default: adi-stack)
   -r, --release <name>    Helm release name (default: adi-stack)
   -o, --openshift         Use OpenShift-specific values
+  -c, --cloud <provider>  Cloud provider: aws, gke, azure (optional)
+  -p, --performance <tier> Performance tier: low, medium, high (default: medium)
   -f, --values <file>     Additional values file to merge
   -d, --dry-run           Perform a dry run (template only)
   -u, --upgrade           Upgrade existing release instead of install
   -h, --help              Show this help message
+
+Cloud Provider Settings (-c):
+  aws     AWS EKS: gp3/io2 storage, NLB annotations
+  gke     Google GKE: premium-rwo/hyperdisk storage, NEG annotations
+  azure   Azure AKS: managed-csi-premium storage, Azure LB annotations
+
+Performance Tiers (-p):
+  low     Development/Testing (3K IOPS, basic storage)
+  medium  Testnet nodes (16K IOPS, SSD storage)
+  high    Production mainnet (64K+ IOPS, premium storage)
 
 Examples:
   $0 mainnet                           # Install mainnet on Kubernetes
@@ -39,6 +51,9 @@ Examples:
   $0 testnet -o -n adi-test            # Install testnet on OpenShift
   $0 mainnet -u                        # Upgrade existing mainnet release
   $0 mainnet -d                        # Dry run for mainnet
+  $0 mainnet -c aws -p high            # AWS with high-performance storage
+  $0 testnet -c gke -p medium          # GKE with medium-performance storage
+  $0 mainnet -c azure -p high          # Azure with premium storage
 
 EOF
     exit "${1:-0}"
@@ -61,6 +76,8 @@ log_error() {
 NAMESPACE="adi-stack"
 RELEASE_NAME="adi-stack"
 OPENSHIFT=false
+CLOUD_PROVIDER=""
+PERFORMANCE_TIER="medium"
 EXTRA_VALUES=""
 DRY_RUN=false
 UPGRADE=false
@@ -84,6 +101,20 @@ while [[ $# -gt 0 ]]; do
         -o|--openshift)
             OPENSHIFT=true
             shift
+            ;;
+        -c|--cloud)
+            CLOUD_PROVIDER="$2"
+            if [[ ! "$CLOUD_PROVIDER" =~ ^(aws|gke|azure)$ ]]; then
+                log_error "Invalid cloud provider: $CLOUD_PROVIDER (must be aws, gke, or azure)"
+            fi
+            shift 2
+            ;;
+        -p|--performance)
+            PERFORMANCE_TIER="$2"
+            if [[ ! "$PERFORMANCE_TIER" =~ ^(low|medium|high)$ ]]; then
+                log_error "Invalid performance tier: $PERFORMANCE_TIER (must be low, medium, or high)"
+            fi
+            shift 2
             ;;
         -f|--values)
             EXTRA_VALUES="$2"
@@ -137,6 +168,82 @@ log_info "Values file: $VALUES_FILE"
 log_info "Namespace: $NAMESPACE"
 log_info "Release: $RELEASE_NAME"
 
+# Generate cloud-specific --set arguments
+CLOUD_SETS=""
+
+if [[ -n "$CLOUD_PROVIDER" ]]; then
+    log_info "Cloud provider: $CLOUD_PROVIDER"
+    log_info "Performance tier: $PERFORMANCE_TIER"
+
+    case "$CLOUD_PROVIDER" in
+        aws)
+            case "$PERFORMANCE_TIER" in
+                low)
+                    # gp3 default (3K IOPS)
+                    CLOUD_SETS="--set reth.persistence.storageClass=gp3"
+                    CLOUD_SETS="$CLOUD_SETS --set externalNode.persistence.storageClass=gp3"
+                    ;;
+                medium)
+                    # gp3 with provisioned IOPS (16K)
+                    CLOUD_SETS="--set reth.persistence.storageClass=gp3"
+                    CLOUD_SETS="$CLOUD_SETS --set 'reth.persistence.annotations.ebs\.csi\.aws\.com/iops=16000'"
+                    CLOUD_SETS="$CLOUD_SETS --set 'reth.persistence.annotations.ebs\.csi\.aws\.com/throughput=500'"
+                    CLOUD_SETS="$CLOUD_SETS --set externalNode.persistence.storageClass=gp3"
+                    ;;
+                high)
+                    # io2 with high IOPS (64K)
+                    CLOUD_SETS="--set reth.persistence.storageClass=io2"
+                    CLOUD_SETS="$CLOUD_SETS --set 'reth.persistence.annotations.ebs\.csi\.aws\.com/iops=64000'"
+                    CLOUD_SETS="$CLOUD_SETS --set externalNode.persistence.storageClass=gp3"
+                    CLOUD_SETS="$CLOUD_SETS --set 'externalNode.persistence.annotations.ebs\.csi\.aws\.com/iops=16000'"
+                    ;;
+            esac
+            ;;
+        gke)
+            case "$PERFORMANCE_TIER" in
+                low)
+                    # standard-rwo (HDD)
+                    CLOUD_SETS="--set reth.persistence.storageClass=standard-rwo"
+                    CLOUD_SETS="$CLOUD_SETS --set externalNode.persistence.storageClass=standard-rwo"
+                    ;;
+                medium)
+                    # premium-rwo (SSD)
+                    CLOUD_SETS="--set reth.persistence.storageClass=premium-rwo"
+                    CLOUD_SETS="$CLOUD_SETS --set externalNode.persistence.storageClass=premium-rwo"
+                    ;;
+                high)
+                    # hyperdisk-extreme (highest IOPS)
+                    CLOUD_SETS="--set reth.persistence.storageClass=hyperdisk-extreme"
+                    CLOUD_SETS="$CLOUD_SETS --set 'reth.persistence.annotations.pd\.csi\.storage\.gke\.io/provisioned-iops-on-create=100000'"
+                    CLOUD_SETS="$CLOUD_SETS --set 'reth.persistence.annotations.pd\.csi\.storage\.gke\.io/provisioned-throughput-on-create=2000'"
+                    CLOUD_SETS="$CLOUD_SETS --set externalNode.persistence.storageClass=premium-rwo"
+                    ;;
+            esac
+            ;;
+        azure)
+            case "$PERFORMANCE_TIER" in
+                low)
+                    # managed-csi (Standard HDD)
+                    CLOUD_SETS="--set reth.persistence.storageClass=managed-csi"
+                    CLOUD_SETS="$CLOUD_SETS --set externalNode.persistence.storageClass=managed-csi"
+                    ;;
+                medium)
+                    # managed-csi-premium (Premium SSD)
+                    CLOUD_SETS="--set reth.persistence.storageClass=managed-csi-premium"
+                    CLOUD_SETS="$CLOUD_SETS --set externalNode.persistence.storageClass=managed-csi-premium"
+                    ;;
+                high)
+                    # managed-csi-premium-v2 (Premium SSD v2 with provisioned IOPS)
+                    CLOUD_SETS="--set reth.persistence.storageClass=managed-csi-premium-v2"
+                    CLOUD_SETS="$CLOUD_SETS --set 'reth.persistence.annotations.disk\.csi\.azure\.com/diskIOPSReadWrite=64000'"
+                    CLOUD_SETS="$CLOUD_SETS --set 'reth.persistence.annotations.disk\.csi\.azure\.com/diskMBpsReadWrite=1000'"
+                    CLOUD_SETS="$CLOUD_SETS --set externalNode.persistence.storageClass=managed-csi-premium"
+                    ;;
+            esac
+            ;;
+    esac
+fi
+
 # Build helm command
 HELM_CMD="helm"
 if [[ "$DRY_RUN" == true ]]; then
@@ -158,6 +265,11 @@ if [[ -n "$EXTRA_VALUES" ]]; then
         log_error "Extra values file not found: $EXTRA_VALUES"
     fi
     HELM_CMD="$HELM_CMD -f $EXTRA_VALUES"
+fi
+
+# Add cloud-specific settings
+if [[ -n "$CLOUD_SETS" ]]; then
+    HELM_CMD="$HELM_CMD $CLOUD_SETS"
 fi
 
 if [[ "$DRY_RUN" == false ]]; then
