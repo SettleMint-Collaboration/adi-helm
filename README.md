@@ -10,7 +10,7 @@
 <br/>
 <p align="center">
 <a href="https://github.com/ADI-Foundation-Labs/adi-helm/actions?query=branch%3Amain"><img src="https://github.com/ADI-Foundation-Labs/adi-helm/actions/workflows/lint.yml/badge.svg?event=push&branch=main" alt="CI status" /></a>
-<a href="https://github.com/ADI-Foundation-Labs/adi-helm" rel="nofollow"><img src="https://img.shields.io/badge/helm-v3-blue" alt="Helm v3"></a>
+<a href="https://github.com/ADI-Foundation-Labs/adi-helm" rel="nofollow"><img src="https://img.shields.io/badge/helm-v3%20%7C%20v4-blue" alt="Helm v3 | v4"></a>
 <a href="https://github.com/ADI-Foundation-Labs/adi-helm" rel="nofollow"><img src="https://img.shields.io/badge/kubernetes-1.24%2B-blue" alt="Kubernetes 1.24+"></a>
 <a href="https://github.com/ADI-Foundation-Labs/adi-helm" rel="nofollow"><img src="https://img.shields.io/github/license/ADI-Foundation-Labs/adi-helm" alt="License"></a>
 <a href="https://github.com/ADI-Foundation-Labs/adi-helm" rel="nofollow"><img src="https://img.shields.io/github/stars/ADI-Foundation-Labs/adi-helm" alt="stars"></a>
@@ -47,9 +47,11 @@ The ADI Stack Helm Chart provides a production-ready deployment solution for run
 ### Prerequisites
 
 - Kubernetes 1.24+ or OpenShift 4.12+
-- Helm 3.x
+- Helm 3.x or 4.x (both supported, v4 recommended for new installations)
 - PersistentVolume provisioner support
 - (Optional) Prometheus Operator for ServiceMonitor
+
+> **Helm v4 Users**: This chart fully supports Helm v4 with Server-Side Apply (SSA), values schema validation, and OCI digest support. See [MIGRATION.md](MIGRATION.md) for upgrade details.
 
 ### Installation
 
@@ -188,6 +190,15 @@ kubectl logs -n adi-stack -l app.kubernetes.io/component=external-node -f
 
 # Access RPC endpoint locally
 kubectl port-forward -n adi-stack svc/adi-stack-adi-stack 3050:3050
+```
+
+## Schema Validation
+
+This chart includes a JSON schema (`values.schema.json`) for validating your configuration. Helm v4 uses this schema automatically during `helm install` and `helm upgrade` to catch configuration errors early.
+
+```bash
+# Validate your values file before deploying
+helm lint ./adi-stack -f my-values.yaml --strict
 ```
 
 ## Contributing
