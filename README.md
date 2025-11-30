@@ -34,11 +34,12 @@ The ADI Stack Helm Chart provides a production-ready deployment solution for run
 ### Key Features
 
 - **Multi-Platform Support** - Deploy on Kubernetes 1.24+ or OpenShift 4.12+
-- **Integrated Ethereum Node** - Optional built-in Reth node for L1 RPC (mainnet or Sepolia)
+- **Multi-Cloud Ready** - Optimized configurations for AWS EKS, Google GKE, and Azure AKS
+- **Integrated Ethereum Node** - Built-in Erigon node with Caplin consensus layer for L1 RPC
+- **Performance Tiers** - Pre-configured resource profiles for development, testnet, and production
 - **Flexible Ingress** - Auto-detection for Kubernetes Ingress, Gateway API, or OpenShift Routes
 - **Enterprise Security** - OpenShift restricted SCC compatible, Pod Security Standards compliant
 - **Cloudflare Tunnel** - Built-in Cloudflared support for secure external access
-- **Proof Synchronization** - Azure Blob Storage integration for proof data
 - **Monitoring Ready** - Prometheus ServiceMonitor support out of the box
 
 ## Quick Start
@@ -68,9 +69,17 @@ cd adi-helm
 # Deploy on OpenShift
 ./install.sh testnet --openshift
 ./install.sh mainnet --openshift
+
+# Deploy with cloud provider optimizations
+./install.sh mainnet --cloud aws --performance high
+./install.sh testnet --cloud gke --performance medium
+./install.sh mainnet --cloud azure --performance high
+
+# Deploy with cert-manager TLS
+./install.sh mainnet --cloud aws --cert-manager
 ```
 
-Or install directly with Helm:
+Or install directly with Helm using layered values files:
 
 ```bash
 # Testnet deployment
@@ -78,10 +87,12 @@ helm install adi-stack ./adi-stack \
   -n adi-stack --create-namespace \
   -f adi-stack/examples/values-testnet.yaml
 
-# Mainnet deployment
+# Mainnet on AWS with high performance
 helm install adi-stack ./adi-stack \
   -n adi-stack --create-namespace \
-  -f adi-stack/examples/values-production.yaml
+  -f adi-stack/examples/values-production.yaml \
+  -f adi-stack/examples/values-cloud-aws.yaml \
+  -f adi-stack/examples/values-performance-high.yaml
 ```
 
 ## Configuration
@@ -98,21 +109,26 @@ helm install adi-stack ./adi-stack \
 
 The chart supports two modes for L1 RPC access:
 
-#### Built-in Reth Node (Recommended)
+#### Built-in Erigon Node (Recommended)
+
+Erigon includes an integrated Caplin consensus layer, eliminating the need for a separate beacon node:
 
 ```yaml
-reth:
+erigon:
   enabled: true
   chain: mainnet # or "sepolia" for testnet
-  syncMode: checkpoint
+  pruneMode: full # archive, full, or minimal
+  caplin:
+    enabled: true
+    checkpointSyncUrl: "https://beaconstate.info/eth/v2/debug/beacon/states/finalized"
   persistence:
-    size: 1500Gi # 100Gi for Sepolia
+    size: 2Ti # 500Gi for testnet/minimal
 ```
 
 #### External RPC Provider
 
 ```yaml
-reth:
+erigon:
   enabled: false
 
 l1Rpc:
@@ -125,12 +141,36 @@ l1Rpc:
 
 ### Example Configurations
 
+**Base configurations:**
+
 | File                                     | Description                     |
 | ---------------------------------------- | ------------------------------- |
 | `examples/values-testnet.yaml`           | Kubernetes testnet (Sepolia)    |
 | `examples/values-production.yaml`        | Kubernetes mainnet (production) |
 | `examples/values-openshift-testnet.yaml` | OpenShift testnet               |
 | `examples/values-openshift-mainnet.yaml` | OpenShift mainnet               |
+
+**Cloud provider layers (combine with base):**
+
+| File                               | Description                            |
+| ---------------------------------- | -------------------------------------- |
+| `examples/values-cloud-aws.yaml`   | AWS EKS (ALB ingress, gp3/io2 storage) |
+| `examples/values-cloud-gke.yaml`   | Google GKE (GCE ingress, premium-rwo)  |
+| `examples/values-cloud-azure.yaml` | Azure AKS (App Gateway, managed-csi)   |
+
+**Performance tiers (combine with base and cloud):**
+
+| File                                      | Description                    |
+| ----------------------------------------- | ------------------------------ |
+| `examples/values-performance-low.yaml`    | Development/testing (3K IOPS)  |
+| `examples/values-performance-medium.yaml` | Testnet nodes (16K IOPS)       |
+| `examples/values-performance-high.yaml`   | Production mainnet (64K+ IOPS) |
+
+**Optional add-ons:**
+
+| File                                   | Description                           |
+| -------------------------------------- | ------------------------------------- |
+| `examples/values-tls-certmanager.yaml` | TLS with cert-manager (Let's Encrypt) |
 
 ## Monitoring
 
@@ -140,8 +180,8 @@ Check pod status and sync progress:
 # View all pods
 kubectl get pods -n adi-stack
 
-# Monitor Reth sync progress
-kubectl logs -n adi-stack -l app.kubernetes.io/component=reth -f
+# Monitor Erigon sync progress
+kubectl logs -n adi-stack -l app.kubernetes.io/component=erigon -f
 
 # Monitor External Node logs
 kubectl logs -n adi-stack -l app.kubernetes.io/component=external-node -f

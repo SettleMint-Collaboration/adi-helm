@@ -2,6 +2,13 @@
 
 A production-ready Helm chart for deploying the ADI Stack (zkOS External Node) on Kubernetes and OpenShift clusters.
 
+## Features
+
+- **Multi-Cloud Support** - Optimized for AWS EKS, Google GKE, and Azure AKS
+- **Integrated Erigon Node** - Built-in Ethereum node with Caplin consensus layer
+- **Performance Tiers** - Pre-configured profiles for dev, testnet, and production workloads
+- **Layered Configuration** - Combine base, cloud, and performance values files
+
 ## Prerequisites
 
 - Kubernetes 1.24+ or OpenShift 4.12+
@@ -37,14 +44,33 @@ helm install adi-stack ./adi-helm/adi-stack -f values.yaml
 
 ### Required Values
 
-| Parameter                  | Description                |
-| -------------------------- | -------------------------- |
-| `genesis.bridgehubAddress` | Bridgehub contract address |
-| `genesis.chainId`          | Chain ID for the network   |
-| `genesis.mainNodeRpcUrl`   | Main node RPC URL          |
-| `l1Rpc.url`                | L1 RPC endpoint URL        |
+| Parameter                  | Description                               |
+| -------------------------- | ----------------------------------------- |
+| `genesis.bridgehubAddress` | Bridgehub contract address                |
+| `genesis.chainId`          | Chain ID for the network                  |
+| `genesis.mainNodeRpcUrl`   | Main node RPC URL                         |
+| `l1Rpc.url`                | L1 RPC endpoint URL (if not using Erigon) |
 
 ### Key Configuration Sections
+
+#### Erigon (Integrated L1 Node)
+
+```yaml
+erigon:
+  enabled: true
+  chain: mainnet # mainnet, sepolia, or holesky
+  pruneMode: full # archive (~2TB), full (~1TB), minimal (~500GB)
+  caplin:
+    enabled: true # Integrated consensus layer
+    checkpointSyncUrl: "https://beaconstate.info/eth/v2/debug/beacon/states/finalized"
+  persistence:
+    size: 2Ti
+    storageClass: "" # Use cluster default
+  resources:
+    requests:
+      cpu: "4"
+      memory: "16Gi"
+```
 
 #### External Node
 
@@ -71,18 +97,6 @@ externalNode:
 cloudflared:
   enabled: true
   tunnelToken: "" # Set via --set or existingSecret
-  existingSecret:
-    name: ""
-    key: ""
-```
-
-#### Proof Sync
-
-```yaml
-proofSync:
-  enabled: true
-  azureStorageAccount: ""
-  azureContainerName: ""
   existingSecret:
     name: ""
     key: ""
@@ -169,11 +183,40 @@ metrics:
 
 ## Examples
 
-See the `examples/` directory for complete configuration examples:
+The `examples/` directory contains layered configuration files. Combine them as needed:
 
-- `values-testnet.yaml` - Testnet deployment
-- `values-production.yaml` - Production deployment with HA
-- `values-openshift.yaml` - OpenShift-specific configuration
+**Base configurations:**
+
+- `values-testnet.yaml` - Testnet deployment (Sepolia)
+- `values-production.yaml` - Production mainnet
+- `values-openshift-testnet.yaml` - OpenShift testnet
+- `values-openshift-mainnet.yaml` - OpenShift mainnet
+
+**Cloud provider layers:**
+
+- `values-cloud-aws.yaml` - AWS EKS (ALB ingress, gp3/io2 storage)
+- `values-cloud-gke.yaml` - Google GKE (GCE ingress, premium-rwo storage)
+- `values-cloud-azure.yaml` - Azure AKS (App Gateway, managed-csi storage)
+
+**Performance tiers:**
+
+- `values-performance-low.yaml` - Development (3K IOPS)
+- `values-performance-medium.yaml` - Testnet (16K IOPS)
+- `values-performance-high.yaml` - Production (64K+ IOPS)
+
+**Optional add-ons:**
+
+- `values-tls-certmanager.yaml` - TLS with cert-manager
+
+**Example usage:**
+
+```bash
+# AWS mainnet with high performance
+helm install adi-stack ./adi-stack \
+  -f examples/values-production.yaml \
+  -f examples/values-cloud-aws.yaml \
+  -f examples/values-performance-high.yaml
+```
 
 ## Upgrading
 
