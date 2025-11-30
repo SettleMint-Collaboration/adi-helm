@@ -37,16 +37,19 @@ helm list -n adi-stack
 Both Helm v3 and v4 can coexist on the same machine.
 
 ```bash
-# macOS
+# macOS - upgrade default helm to v4
 brew install helm
 
-# Or download directly
-curl https://get.helm.sh/helm-v4.0.3-darwin-arm64.tar.gz | tar xz
-mv darwin-arm64/helm /usr/local/bin/helm4
+# Or keep both versions (rename existing v3 first)
+mv /usr/local/bin/helm /usr/local/bin/helm3
 
-# Verify installation
-helm version
-# Should show v4.x.x
+# Download Helm v4
+curl https://get.helm.sh/helm-v4.0.3-darwin-arm64.tar.gz | tar xz
+mv darwin-arm64/helm /usr/local/bin/helm
+
+# Verify installations
+helm version   # Should show v4.x.x
+helm3 version  # Should show v3.x.x (if you kept both)
 ```
 
 ### Step 3: Test Before Upgrading
@@ -148,7 +151,8 @@ helm history adi-stack -n adi-stack
 # Rollback to previous revision
 helm rollback adi-stack 1 -n adi-stack
 
-# Or rollback with Helm v3 (if v4 release causes issues)
+# Or rollback using your Helm v3 binary (if v4 release causes issues)
+# Use 'helm3' if you set up both versions as shown in Step 2
 helm3 rollback adi-stack 1 -n adi-stack
 ```
 
