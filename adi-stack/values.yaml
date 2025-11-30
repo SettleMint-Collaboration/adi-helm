@@ -459,6 +459,8 @@ serviceAccount:
   create: true
   # -- Service account name (auto-generated if empty)
   name: ""
+  # -- Automount service account token (default: false for security)
+  automountServiceAccountToken: false
   # -- Annotations for service account
   annotations: {}
   #

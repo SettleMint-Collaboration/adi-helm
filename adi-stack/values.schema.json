@@ -433,6 +433,11 @@
           "type": "string",
           "description": "Service account name (auto-generated if empty)"
         },
+        "automountServiceAccountToken": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automount service account token (default: false for security)"
+        },
         "annotations": {
           "type": "object",
           "additionalProperties": { "type": "string" },
