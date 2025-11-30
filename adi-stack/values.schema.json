@@ -1,0 +1,1028 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ADI Stack Helm Chart Values",
+  "description": "Configuration schema for the ADI Stack Helm Chart - a production-ready Kubernetes deployment for ADI Stack zkOS L2 External Nodes.",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "global": {
+      "type": "object",
+      "description": "Global configuration applied to all components",
+      "additionalProperties": true,
+      "properties": {
+        "imageRegistry": {
+          "type": "string",
+          "description": "Global container image registry override"
+        },
+        "imagePullSecrets": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Global image pull secrets"
+        }
+      }
+    },
+    "imagePullSecrets": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Image pull secrets (can also use global.imagePullSecrets)"
+    },
+    "nameOverride": {
+      "type": "string",
+      "description": "Override chart name"
+    },
+    "fullnameOverride": {
+      "type": "string",
+      "description": "Override full name"
+    },
+    "genesis": {
+      "type": "object",
+      "description": "Genesis configuration for the blockchain",
+      "additionalProperties": true,
+      "properties": {
+        "bridgehubAddress": {
+          "type": "string",
+          "pattern": "^0x[a-fA-F0-9]{40}$",
+          "description": "Bridgehub contract address (Ethereum address format)"
+        },
+        "chainId": {
+          "type": "string",
+          "pattern": "^[0-9]+$",
+          "description": "Chain ID for the network"
+        },
+        "mainNodeRpcUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "Main node RPC URL"
+        }
+      }
+    },
+    "l1Rpc": {
+      "type": "object",
+      "description": "L1 RPC configuration",
+      "additionalProperties": true,
+      "properties": {
+        "url": {
+          "type": "string",
+          "description": "L1 RPC URL (required unless erigon.enabled)"
+        },
+        "existingSecret": {
+          "type": "string",
+          "description": "Use existing secret for L1 RPC URL"
+        },
+        "existingSecretKey": {
+          "type": "string",
+          "description": "Key in existing secret"
+        }
+      }
+    },
+    "erigon": {
+      "type": "object",
+      "description": "Erigon Ethereum Node configuration (recommended internal L1 RPC)",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Erigon deployment (provides internal L1 RPC with consensus)"
+        },
+        "replicaCount": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1,
+          "description": "Number of replicas (1 recommended for blockchain nodes)"
+        },
+        "image": {
+          "$ref": "#/definitions/image",
+          "description": "Image configuration"
+        },
+        "chain": {
+          "type": "string",
+          "enum": ["mainnet", "sepolia", "holesky"],
+          "default": "mainnet",
+          "description": "Ethereum network"
+        },
+        "pruneMode": {
+          "type": "string",
+          "enum": ["archive", "full", "minimal"],
+          "default": "full",
+          "description": "Prune mode: archive (~2TB), full (~1TB), minimal (~500GB)"
+        },
+        "caplin": {
+          "type": "object",
+          "description": "Caplin (integrated consensus layer) configuration",
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable Caplin (set to false to use external consensus client)"
+            },
+            "checkpointSyncUrl": {
+              "type": "string",
+              "format": "uri",
+              "description": "Checkpoint sync URL for fast initial sync"
+            }
+          }
+        },
+        "maxPeers": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 100,
+          "description": "Maximum network peer count"
+        },
+        "httpPort": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
+          "default": 8545,
+          "description": "HTTP RPC port"
+        },
+        "wsPort": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
+          "default": 8546,
+          "description": "WebSocket RPC port"
+        },
+        "httpApi": {
+          "type": "string",
+          "default": "eth,net,web3,debug,trace,txpool",
+          "description": "RPC API namespaces to expose"
+        },
+        "p2pPort": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
+          "default": 30303,
+          "description": "P2P port for execution layer peer discovery"
+        },
+        "caplinDiscoveryPort": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
+          "default": 4000,
+          "description": "Caplin discovery port (UDP, DISCV5)"
+        },
+        "caplinTcpPort": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
+          "default": 4001,
+          "description": "Caplin TCP port for consensus P2P"
+        },
+        "beaconApiPort": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
+          "default": 5555,
+          "description": "Beacon API port (for validators and monitoring)"
+        },
+        "metricsEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable metrics endpoint"
+        },
+        "metricsPort": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
+          "default": 6060,
+          "description": "Metrics port"
+        },
+        "nat": {
+          "type": "string",
+          "default": "none",
+          "description": "NAT traversal mode (none, any, extip:<IP>, upnp)"
+        },
+        "bootnodes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Custom bootnodes"
+        },
+        "persistence": {
+          "$ref": "#/definitions/persistence",
+          "description": "Persistent storage for blockchain data"
+        },
+        "resources": {
+          "$ref": "#/definitions/resources",
+          "description": "Resource requests and limits"
+        },
+        "podSecurityContext": {
+          "$ref": "#/definitions/podSecurityContext",
+          "description": "Pod security context (ignored if openshift.enabled)"
+        },
+        "containerSecurityContext": {
+          "$ref": "#/definitions/containerSecurityContext",
+          "description": "Container security context (ignored if openshift.enabled)"
+        },
+        "startupProbe": {
+          "$ref": "#/definitions/probe",
+          "description": "Startup probe configuration"
+        },
+        "livenessProbe": {
+          "$ref": "#/definitions/probe",
+          "description": "Liveness probe configuration"
+        },
+        "readinessProbe": {
+          "$ref": "#/definitions/probe",
+          "description": "Readiness probe configuration"
+        },
+        "nodeSelector": {
+          "$ref": "#/definitions/nodeSelector"
+        },
+        "tolerations": {
+          "$ref": "#/definitions/tolerations"
+        },
+        "affinity": {
+          "$ref": "#/definitions/affinity"
+        },
+        "extraArgs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Extra arguments for erigon command"
+        }
+      }
+    },
+    "externalNode": {
+      "type": "object",
+      "description": "External Node (StatefulSet) configuration",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable external node deployment"
+        },
+        "replicaCount": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1,
+          "description": "Number of replicas (1 recommended for blockchain nodes)"
+        },
+        "image": {
+          "$ref": "#/definitions/image",
+          "description": "Image configuration"
+        },
+        "updateStrategy": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["RollingUpdate", "OnDelete"],
+              "default": "RollingUpdate",
+              "description": "Type of update strategy"
+            }
+          }
+        },
+        "logLevel": {
+          "type": "string",
+          "description": "Log level (RUST_LOG format)"
+        },
+        "persistence": {
+          "$ref": "#/definitions/persistence",
+          "description": "Persistent storage for blockchain data"
+        },
+        "resources": {
+          "$ref": "#/definitions/resources",
+          "description": "Resource requests and limits"
+        },
+        "podSecurityContext": {
+          "$ref": "#/definitions/podSecurityContext",
+          "description": "Pod security context (ignored if openshift.enabled)"
+        },
+        "containerSecurityContext": {
+          "$ref": "#/definitions/containerSecurityContext",
+          "description": "Container security context (ignored if openshift.enabled)"
+        },
+        "livenessProbe": {
+          "$ref": "#/definitions/probe",
+          "description": "Liveness probe configuration"
+        },
+        "readinessProbe": {
+          "$ref": "#/definitions/probe",
+          "description": "Readiness probe configuration"
+        },
+        "extraEnv": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "value": { "type": "string" },
+              "valueFrom": { "type": "object" }
+            }
+          },
+          "description": "Extra environment variables"
+        },
+        "extraVolumeMounts": {
+          "type": "array",
+          "items": { "type": "object" },
+          "description": "Extra volume mounts"
+        },
+        "extraVolumes": {
+          "type": "array",
+          "items": { "type": "object" },
+          "description": "Extra volumes"
+        }
+      }
+    },
+    "cloudflared": {
+      "type": "object",
+      "description": "Cloudflared TCP Proxy (Deployment) configuration",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable cloudflared deployment"
+        },
+        "replicaCount": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1,
+          "description": "Number of replicas"
+        },
+        "image": {
+          "$ref": "#/definitions/image",
+          "description": "Image configuration"
+        },
+        "replayHostname": {
+          "type": "string",
+          "description": "Replay endpoint hostname"
+        },
+        "listenerPort": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
+          "default": 3053,
+          "description": "Listener port"
+        },
+        "resources": {
+          "$ref": "#/definitions/resources",
+          "description": "Resource requests and limits"
+        },
+        "podSecurityContext": {
+          "$ref": "#/definitions/podSecurityContext"
+        },
+        "containerSecurityContext": {
+          "$ref": "#/definitions/containerSecurityContext"
+        }
+      }
+    },
+    "proofSync": {
+      "type": "object",
+      "description": "Proof Sync (Deployment) configuration",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable proof-sync deployment"
+        },
+        "replicaCount": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1,
+          "description": "Number of replicas"
+        },
+        "image": {
+          "$ref": "#/definitions/image",
+          "description": "Image configuration"
+        },
+        "storageUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "Azure Blob Storage URL for proofs"
+        },
+        "syncInterval": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 60,
+          "description": "Sync interval in seconds"
+        },
+        "deleteDestination": {
+          "type": "string",
+          "enum": ["true", "false"],
+          "default": "false",
+          "description": "Delete destination files not in source"
+        },
+        "resources": {
+          "$ref": "#/definitions/resources",
+          "description": "Resource requests and limits"
+        },
+        "podSecurityContext": {
+          "$ref": "#/definitions/podSecurityContext"
+        },
+        "containerSecurityContext": {
+          "$ref": "#/definitions/containerSecurityContext"
+        }
+      }
+    },
+    "serviceAccount": {
+      "type": "object",
+      "description": "Service Account configuration",
+      "additionalProperties": true,
+      "properties": {
+        "create": {
+          "type": "boolean",
+          "default": true,
+          "description": "Create a service account"
+        },
+        "name": {
+          "type": "string",
+          "description": "Service account name (auto-generated if empty)"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Annotations for service account (e.g., for cloud workload identity)"
+        }
+      }
+    },
+    "rbac": {
+      "type": "object",
+      "description": "RBAC configuration",
+      "additionalProperties": true,
+      "properties": {
+        "create": {
+          "type": "boolean",
+          "default": true,
+          "description": "Create RBAC resources"
+        },
+        "rules": {
+          "type": "array",
+          "items": { "type": "object" },
+          "description": "Additional RBAC rules"
+        }
+      }
+    },
+    "service": {
+      "type": "object",
+      "description": "Service configuration",
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["ClusterIP", "NodePort", "LoadBalancer", "ExternalName"],
+          "default": "ClusterIP",
+          "description": "Service type"
+        },
+        "ports": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "rpc": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535,
+              "default": 3050
+            },
+            "health": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535,
+              "default": 3071
+            },
+            "replay": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535,
+              "default": 3054
+            },
+            "metrics": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535,
+              "default": 3312
+            }
+          }
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Service annotations (e.g., for cloud load balancer configuration)"
+        },
+        "sessionAffinity": {
+          "type": "string",
+          "enum": ["None", "ClientIP"],
+          "default": "None",
+          "description": "Session affinity"
+        }
+      }
+    },
+    "ingress": {
+      "type": "object",
+      "description": "Ingress configuration",
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["ingress", "gateway", "route", "auto"],
+          "default": "auto",
+          "description": "Ingress type: ingress, gateway, route, or auto (detect platform)"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable ingress"
+        },
+        "hostname": {
+          "type": "string",
+          "description": "Hostname for ingress"
+        },
+        "path": {
+          "type": "string",
+          "default": "/",
+          "description": "Path for ingress"
+        },
+        "pathType": {
+          "type": "string",
+          "enum": ["Prefix", "Exact", "ImplementationSpecific"],
+          "default": "Prefix",
+          "description": "Path type"
+        },
+        "tls": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable TLS"
+            },
+            "secretName": {
+              "type": "string",
+              "description": "TLS secret name (auto-generated if empty with cert-manager)"
+            }
+          }
+        },
+        "kubernetes": {
+          "type": "object",
+          "description": "Kubernetes Ingress specific configuration",
+          "additionalProperties": true,
+          "properties": {
+            "className": {
+              "type": "string",
+              "description": "Ingress class name (nginx, alb, gce, azure/application-gateway)"
+            },
+            "annotations": {
+              "type": "object",
+              "additionalProperties": { "type": "string" },
+              "description": "Ingress annotations"
+            }
+          }
+        },
+        "gateway": {
+          "type": "object",
+          "description": "Gateway API specific configuration",
+          "additionalProperties": true,
+          "properties": {
+            "className": {
+              "type": "string",
+              "description": "Gateway class name"
+            },
+            "gatewayName": {
+              "type": "string",
+              "description": "Gateway name to attach to"
+            },
+            "sectionName": {
+              "type": "string",
+              "description": "Gateway listener section name"
+            }
+          }
+        },
+        "route": {
+          "type": "object",
+          "description": "OpenShift Route specific configuration",
+          "additionalProperties": true,
+          "properties": {
+            "termination": {
+              "type": "string",
+              "enum": ["edge", "passthrough", "reencrypt"],
+              "default": "edge",
+              "description": "TLS termination type"
+            },
+            "insecureEdgeTerminationPolicy": {
+              "type": "string",
+              "enum": ["Allow", "Redirect", "None"],
+              "default": "Redirect",
+              "description": "Insecure edge termination policy"
+            },
+            "wildcardPolicy": {
+              "type": "string",
+              "enum": ["None", "Subdomain"],
+              "default": "None",
+              "description": "Wildcard policy"
+            },
+            "annotations": {
+              "type": "object",
+              "additionalProperties": { "type": "string" },
+              "description": "Route annotations"
+            }
+          }
+        }
+      }
+    },
+    "openshift": {
+      "type": "object",
+      "description": "OpenShift specific settings",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable OpenShift-specific configurations"
+        },
+        "route": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Create OpenShift Route"
+            }
+          }
+        }
+      }
+    },
+    "networkPolicy": {
+      "type": "object",
+      "description": "Network policies configuration",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable network policies"
+        },
+        "ingress": {
+          "type": "array",
+          "items": { "type": "object" },
+          "description": "Ingress rules"
+        },
+        "egress": {
+          "type": "array",
+          "items": { "type": "object" },
+          "description": "Egress rules"
+        }
+      }
+    },
+    "podDisruptionBudget": {
+      "type": "object",
+      "description": "Pod Disruption Budget configuration",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable PDB"
+        },
+        "minAvailable": {
+          "type": ["integer", "string"],
+          "description": "Minimum available pods"
+        },
+        "maxUnavailable": {
+          "type": ["integer", "string"],
+          "description": "Maximum unavailable pods (alternative to minAvailable)"
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "description": "Metrics and monitoring configuration",
+      "additionalProperties": true,
+      "properties": {
+        "serviceMonitor": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": false,
+              "description": "Enable ServiceMonitor"
+            },
+            "interval": {
+              "type": "string",
+              "default": "30s",
+              "description": "Scrape interval"
+            },
+            "scrapeTimeout": {
+              "type": "string",
+              "default": "10s",
+              "description": "Scrape timeout"
+            },
+            "labels": {
+              "type": "object",
+              "additionalProperties": { "type": "string" },
+              "description": "Additional labels for ServiceMonitor"
+            },
+            "namespace": {
+              "type": "string",
+              "description": "Namespace for ServiceMonitor (defaults to release namespace)"
+            },
+            "metricRelabelings": {
+              "type": "array",
+              "items": { "type": "object" },
+              "description": "Metric relabeling configs"
+            },
+            "relabelings": {
+              "type": "array",
+              "items": { "type": "object" },
+              "description": "Relabeling configs"
+            }
+          }
+        },
+        "prometheusRule": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": false,
+              "description": "Enable PrometheusRule"
+            },
+            "labels": {
+              "type": "object",
+              "additionalProperties": { "type": "string" },
+              "description": "Additional labels for PrometheusRule"
+            },
+            "rules": {
+              "type": "array",
+              "items": { "type": "object" },
+              "description": "Alerting rules"
+            }
+          }
+        }
+      }
+    },
+    "nodeSelector": {
+      "$ref": "#/definitions/nodeSelector",
+      "description": "Global node selector"
+    },
+    "tolerations": {
+      "$ref": "#/definitions/tolerations",
+      "description": "Global tolerations"
+    },
+    "affinity": {
+      "$ref": "#/definitions/affinity",
+      "description": "Global affinity rules"
+    },
+    "topologySpreadConstraints": {
+      "type": "array",
+      "items": { "type": "object" },
+      "description": "Topology spread constraints"
+    },
+    "priorityClassName": {
+      "type": "string",
+      "description": "Priority class name"
+    },
+    "podAnnotations": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "description": "Pod annotations (applied to all pods)"
+    },
+    "terminationGracePeriodSeconds": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 30,
+      "description": "Termination grace period"
+    },
+    "commonLabels": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "description": "Common labels for all resources"
+    },
+    "commonAnnotations": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "description": "Common annotations for all resources"
+    },
+    "extraObjects": {
+      "type": "array",
+      "items": { "type": "object" },
+      "description": "Extra objects to deploy"
+    }
+  },
+  "definitions": {
+    "image": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "registry": {
+          "type": "string",
+          "description": "Image registry"
+        },
+        "repository": {
+          "type": "string",
+          "description": "Image repository"
+        },
+        "tag": {
+          "type": "string",
+          "description": "Image tag"
+        },
+        "pullPolicy": {
+          "type": "string",
+          "enum": ["Always", "IfNotPresent", "Never"],
+          "default": "IfNotPresent",
+          "description": "Image pull policy"
+        }
+      }
+    },
+    "persistence": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable persistent storage"
+        },
+        "size": {
+          "type": "string",
+          "pattern": "^[0-9]+(Gi|Ti|Mi|G|T|M)$",
+          "description": "Storage size (e.g., 500Gi, 2Ti)"
+        },
+        "storageClass": {
+          "type": "string",
+          "description": "Storage class (empty string uses cluster default)"
+        },
+        "accessMode": {
+          "type": "string",
+          "enum": ["ReadWriteOnce", "ReadOnlyMany", "ReadWriteMany"],
+          "default": "ReadWriteOnce",
+          "description": "Access mode"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Annotations for PVC"
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Labels for PVC"
+        }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "requests": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "cpu": {
+              "type": "string",
+              "description": "CPU request"
+            },
+            "memory": {
+              "type": "string",
+              "description": "Memory request"
+            }
+          }
+        },
+        "limits": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "cpu": {
+              "type": "string",
+              "description": "CPU limit"
+            },
+            "memory": {
+              "type": "string",
+              "description": "Memory limit"
+            }
+          }
+        }
+      }
+    },
+    "podSecurityContext": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "runAsNonRoot": {
+          "type": "boolean"
+        },
+        "runAsUser": {
+          "type": "integer"
+        },
+        "runAsGroup": {
+          "type": "integer"
+        },
+        "fsGroup": {
+          "type": "integer"
+        },
+        "seccompProfile": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "containerSecurityContext": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "allowPrivilegeEscalation": {
+          "type": "boolean"
+        },
+        "readOnlyRootFilesystem": {
+          "type": "boolean"
+        },
+        "runAsNonRoot": {
+          "type": "boolean"
+        },
+        "runAsUser": {
+          "type": "integer"
+        },
+        "capabilities": {
+          "type": "object",
+          "properties": {
+            "drop": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "add": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "probe": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "initialDelaySeconds": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Initial delay before probe starts"
+        },
+        "periodSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Period between probes"
+        },
+        "timeoutSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Timeout for each probe"
+        },
+        "failureThreshold": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of failures before action"
+        },
+        "successThreshold": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of successes required"
+        }
+      }
+    },
+    "nodeSelector": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "description": "Node selector"
+    },
+    "tolerations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "key": { "type": "string" },
+          "operator": {
+            "type": "string",
+            "enum": ["Exists", "Equal"]
+          },
+          "value": { "type": "string" },
+          "effect": {
+            "type": "string",
+            "enum": ["NoSchedule", "PreferNoSchedule", "NoExecute"]
+          },
+          "tolerationSeconds": { "type": "integer" }
+        }
+      },
+      "description": "Tolerations"
+    },
+    "affinity": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "nodeAffinity": { "type": "object" },
+        "podAffinity": { "type": "object" },
+        "podAntiAffinity": { "type": "object" }
+      },
+      "description": "Affinity rules"
+    }
+  }
+}
