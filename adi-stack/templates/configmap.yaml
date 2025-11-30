@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "adi-stack.fullname" . }}-genesis
+  labels:
+    {{- include "adi-stack.labels" . | nindent 4 }}
+  {{- with (include "adi-stack.annotations" .) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+data:
+  genesis_bridgehub_address: {{ .Values.genesis.bridgehubAddress | quote }}
+  genesis_chain_id: {{ .Values.genesis.chainId | quote }}
+  general_main_node_rpc_url: {{ .Values.genesis.mainNodeRpcUrl | quote }}

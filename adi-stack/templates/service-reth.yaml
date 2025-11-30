@@ -1,0 +1,37 @@
+{{- if .Values.reth.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "adi-stack.fullname" . }}-reth
+  labels:
+    {{- include "adi-stack.labels" . | nindent 4 }}
+    app.kubernetes.io/component: reth
+  {{- with (include "adi-stack.annotations" .) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: http-rpc
+      port: {{ .Values.reth.httpPort }}
+      targetPort: http-rpc
+      protocol: TCP
+    - name: p2p-tcp
+      port: {{ .Values.reth.p2pPort }}
+      targetPort: p2p-tcp
+      protocol: TCP
+    - name: p2p-udp
+      port: {{ .Values.reth.p2pPort }}
+      targetPort: p2p-udp
+      protocol: UDP
+    {{- if .Values.reth.metricsEnabled }}
+    - name: metrics
+      port: {{ .Values.reth.metricsPort }}
+      targetPort: metrics
+      protocol: TCP
+    {{- end }}
+  selector:
+    {{- include "adi-stack.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: reth
+{{- end }}

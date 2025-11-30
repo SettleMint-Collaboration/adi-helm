@@ -1,0 +1,199 @@
+{{- if .Values.externalNode.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "adi-stack.fullname" . }}-external-node
+  labels:
+    {{- include "adi-stack.labels" . | nindent 4 }}
+    app.kubernetes.io/component: external-node
+  {{- with (include "adi-stack.annotations" .) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  serviceName: {{ include "adi-stack.fullname" . }}-external-node
+  replicas: {{ .Values.externalNode.replicaCount }}
+  updateStrategy:
+    type: {{ .Values.externalNode.updateStrategy.type }}
+  selector:
+    matchLabels:
+      {{- include "adi-stack.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: external-node
+  template:
+    metadata:
+      labels:
+        {{- include "adi-stack.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: external-node
+      annotations:
+        {{- include "adi-stack.podAnnotations" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "adi-stack.serviceAccountName" . }}
+      {{- include "adi-stack.imagePullSecrets" . | nindent 6 }}
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName }}
+      {{- end }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      {{- if not .Values.openshift.enabled }}
+      securityContext:
+        {{- toYaml .Values.externalNode.podSecurityContext | nindent 8 }}
+      {{- else }}
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      {{- end }}
+      initContainers:
+        - name: init-directories
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              mkdir -p /chain/db/node1 /chain/db/shared /chain/db/node1/block_dumps
+              chmod -R 755 /chain
+          volumeMounts:
+            - name: chain-data
+              mountPath: /chain
+          {{- if not .Values.openshift.enabled }}
+          securityContext:
+            runAsUser: 0
+            runAsNonRoot: false
+          {{- end }}
+      containers:
+        - name: external-node
+          image: {{ include "adi-stack.externalNode.image" . }}
+          imagePullPolicy: {{ .Values.externalNode.image.pullPolicy }}
+          workingDir: /app
+          ports:
+            - name: rpc
+              containerPort: 3050
+              protocol: TCP
+            - name: health
+              containerPort: 3071
+              protocol: TCP
+            - name: replay
+              containerPort: 3054
+              protocol: TCP
+            - name: metrics
+              containerPort: 3312
+              protocol: TCP
+          env:
+            {{- if .Values.reth.enabled }}
+            # Using internal Reth node for L1 RPC
+            - name: GENERAL_L1_RPC_URL
+              value: {{ include "adi-stack.l1RpcUrl" . | quote }}
+            {{- else }}
+            # Using external L1 RPC (from secret)
+            - name: GENERAL_L1_RPC_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "adi-stack.l1RpcSecretName" . }}
+                  key: {{ include "adi-stack.l1RpcSecretKey" . }}
+            {{- end }}
+            - name: genesis_bridgehub_address
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "adi-stack.fullname" . }}-genesis
+                  key: genesis_bridgehub_address
+            - name: genesis_chain_id
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "adi-stack.fullname" . }}-genesis
+                  key: genesis_chain_id
+            - name: general_main_node_rpc_url
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "adi-stack.fullname" . }}-genesis
+                  key: general_main_node_rpc_url
+            - name: sequencer_block_replay_download_address
+              value: "{{ include "adi-stack.fullname" . }}-cloudflared:{{ .Values.cloudflared.listenerPort }}"
+            - name: general_rocks_db_path
+              value: "/chain/db/node1"
+            - name: prover_api_object_store_file_backed_base_path
+              value: "/chain/db/shared"
+            - name: sequencer_block_dump_path
+              value: "/chain/db/node1/block_dumps"
+            - name: sequencer_block_replay_server_address
+              value: "0.0.0.0:3054"
+            - name: rpc_address
+              value: "0.0.0.0:3050"
+            - name: status_server_address
+              value: "0.0.0.0:3071"
+            - name: general_prometheus_port
+              value: "3312"
+            - name: RUST_LOG
+              value: {{ .Values.externalNode.logLevel | quote }}
+            {{- with .Values.externalNode.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: health
+            initialDelaySeconds: {{ .Values.externalNode.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.externalNode.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.externalNode.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.externalNode.livenessProbe.failureThreshold }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: health
+            initialDelaySeconds: {{ .Values.externalNode.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.externalNode.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.externalNode.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.externalNode.readinessProbe.failureThreshold }}
+          resources:
+            {{- toYaml .Values.externalNode.resources | nindent 12 }}
+          {{- if not .Values.openshift.enabled }}
+          securityContext:
+            {{- toYaml .Values.externalNode.containerSecurityContext | nindent 12 }}
+          {{- else }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+          {{- end }}
+          volumeMounts:
+            - name: chain-data
+              mountPath: /chain
+            {{- with .Values.externalNode.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.externalNode.extraVolumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  volumeClaimTemplates:
+    - metadata:
+        name: chain-data
+        labels:
+          {{- include "adi-stack.labels" . | nindent 10 }}
+          app.kubernetes.io/component: external-node
+      spec:
+        accessModes:
+          - {{ .Values.externalNode.persistence.accessMode }}
+        {{- if .Values.externalNode.persistence.storageClass }}
+        storageClassName: {{ .Values.externalNode.persistence.storageClass | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.externalNode.persistence.size }}
+{{- end }}

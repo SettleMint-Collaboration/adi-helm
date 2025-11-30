@@ -1,0 +1,190 @@
+# Example values for ADI Stack production deployment
+# Copy and customize for your environment
+
+# Genesis configuration - REQUIRED
+genesis:
+  bridgehubAddress: "0x0000000000000000000000000000000000000000"
+  chainId: "270"
+  mainNodeRpcUrl: "https://mainnet.example.com"
+
+# Reth Ethereum Node - Internal L1 RPC (recommended for production)
+# Provides a self-hosted Ethereum mainnet node, eliminating external RPC dependencies
+reth:
+  enabled: true
+  image:
+    tag: "v1.1.0" # Pin to specific version
+  chain: mainnet
+  syncMode: checkpoint
+  persistence:
+    size: 2000Gi # Extra headroom for mainnet growth
+    storageClass: "fast-ssd" # Use high-IOPS storage
+  resources:
+    requests:
+      cpu: "8"
+      memory: "32Gi"
+    limits:
+      cpu: "16"
+      memory: "64Gi"
+  nodeSelector:
+    node-type: compute
+  tolerations:
+    - key: "dedicated"
+      operator: "Equal"
+      value: "blockchain"
+      effect: "NoSchedule"
+
+# L1 RPC configuration - Not needed when reth.enabled=true
+# Uncomment below to use external RPC instead of internal Reth
+# l1Rpc:
+#   existingSecret:
+#     name: l1-rpc-credentials
+#     key: url
+
+# External node - production-grade resources
+externalNode:
+  image:
+    repository: harbor.sre.ideasoft.io/adi-chain/external-node
+    tag: "v0.10.0" # Pin to specific version
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      memory: "8Gi"
+      cpu: "4"
+    limits:
+      memory: "16Gi"
+      cpu: "8"
+  persistence:
+    size: 500Gi
+    storageClass: "fast-ssd" # Use fast storage class
+  nodeSelector:
+    node-type: compute
+  tolerations:
+    - key: "dedicated"
+      operator: "Equal"
+      value: "adi-stack"
+      effect: "NoSchedule"
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: adi-stack
+            topologyKey: kubernetes.io/hostname
+
+# Cloudflared - use existing secret
+cloudflared:
+  enabled: true
+  existingSecret:
+    name: cloudflared-credentials
+    key: tunnel-token
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+
+# Proof sync - production configuration
+proofSync:
+  enabled: true
+  existingSecret:
+    name: azure-storage-credentials
+    key: sas-token
+  azureStorageAccount: "adistorageproduction"
+  azureContainerName: "proofs"
+  schedule: "*/5 * * * *" # Sync every 5 minutes
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+# Image pull secrets for private registry
+imagePullSecrets:
+  - name: harbor-registry-credentials
+
+# Service account with specific annotations
+serviceAccount:
+  create: true
+  annotations:
+    iam.gke.io/gcp-service-account: adi-stack@project.iam.gserviceaccount.com
+
+# Ingress - production with TLS
+ingress:
+  enabled: true
+  type: auto
+  hostname: adi.production.example.com
+  path: /
+  pathType: Prefix
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  tls:
+    enabled: true
+    secretName: adi-production-tls
+
+# Network policies for security
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              network-policy: allow-adi
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 3050
+        - protocol: TCP
+          port: 3071
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 8545
+
+# Pod disruption budget for HA
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Prometheus monitoring
+metrics:
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    scrapeTimeout: 10s
+    labels:
+      release: prometheus-stack
+
+# Security contexts - production hardened
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000

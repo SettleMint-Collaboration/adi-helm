@@ -1,0 +1,147 @@
+# Example values for ADI Stack on OpenShift (Testnet/Sepolia)
+# Copy and customize for your environment
+
+# Genesis configuration - REQUIRED
+genesis:
+  bridgehubAddress: "0xc1662F0478e0E93Dc6CC321281Eb180A21036Da6"
+  chainId: "36900"
+  mainNodeRpcUrl: "https://rpc.ab.testnet.adifoundation.ai/"
+
+# Reth Ethereum Node - Internal L1 RPC for Sepolia testnet
+reth:
+  enabled: true
+  image:
+    tag: "v1.1.0" # Pin to specific version
+  chain: sepolia # Use Sepolia testnet
+  syncMode: checkpoint
+  persistence:
+    size: 100Gi # Sepolia is much smaller than mainnet
+    storageClass: "" # Uses OpenShift default storage class
+  resources:
+    requests:
+      cpu: "2"
+      memory: "8Gi"
+    limits:
+      cpu: "4"
+      memory: "16Gi"
+
+# L1 RPC configuration - Not needed when reth.enabled=true
+# Uncomment below to use external RPC instead of internal Reth
+# l1Rpc:
+#   url: "https://eth-sepolia.example.com"
+
+# OpenShift-specific settings
+openshift:
+  enabled: true
+  # Security context compatible with restricted SCC
+  securityContext:
+    runAsNonRoot: true
+    # Do NOT set runAsUser - OpenShift assigns from namespace range
+    seccompProfile:
+      type: RuntimeDefault
+
+# External node - testnet resources
+externalNode:
+  image:
+    tag: "latest"
+  resources:
+    requests:
+      memory: "2Gi"
+      cpu: "1"
+    limits:
+      memory: "4Gi"
+      cpu: "2"
+  persistence:
+    size: 50Gi
+    storageClass: "" # Uses cluster default
+
+# Cloudflared
+cloudflared:
+  enabled: true
+  # Set tunnel token via --set or existingSecret
+  # existingSecret:
+  #   name: cloudflared-credentials
+  #   key: tunnel-token
+
+# Disable proof-sync for testnet
+proofSync:
+  enabled: false
+
+# Use OpenShift Routes instead of Ingress
+ingress:
+  enabled: true
+  type: route # Explicitly use OpenShift Routes
+  hostname: adi-testnet.apps.openshift.example.com
+  path: /
+  tls:
+    enabled: true
+  route:
+    annotations:
+      haproxy.router.openshift.io/timeout: 3600s
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+    wildcardPolicy: None
+
+# ServiceAccount - let OpenShift manage
+serviceAccount:
+  create: true
+  annotations: {}
+
+# RBAC - minimal permissions
+rbac:
+  create: true
+  rules: [] # No special permissions needed
+
+# Network policies - works with OpenShift SDN
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              network.openshift.io/policy-group: ingress
+      ports:
+        - protocol: TCP
+          port: 3050
+        - protocol: TCP
+          port: 3071
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 8545
+
+# Pod disruption budget - disabled for testnet
+podDisruptionBudget:
+  enabled: false
+
+# Prometheus monitoring via OpenShift User Workload Monitoring
+metrics:
+  serviceMonitor:
+    enabled: false # Enable if User Workload Monitoring is configured
+    namespace: openshift-user-workload-monitoring
+    interval: 30s
+    labels:
+      prometheus: user-workload
+
+# Security context - OpenShift restricted SCC compatible
+securityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true

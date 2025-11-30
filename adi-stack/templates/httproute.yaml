@@ -1,0 +1,30 @@
+{{- if and .Values.ingress.enabled (eq (include "adi-stack.ingressType" .) "gateway") }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ include "adi-stack.fullname" . }}
+  labels:
+    {{- include "adi-stack.labels" . | nindent 4 }}
+spec:
+  parentRefs:
+    {{- if .Values.ingress.gateway.gatewayName }}
+    - name: {{ .Values.ingress.gateway.gatewayName }}
+      {{- if .Values.ingress.gateway.sectionName }}
+      sectionName: {{ .Values.ingress.gateway.sectionName }}
+      {{- end }}
+    {{- else }}
+    - name: {{ include "adi-stack.fullname" . }}
+    {{- end }}
+  {{- if .Values.ingress.hostname }}
+  hostnames:
+    - {{ .Values.ingress.hostname | quote }}
+  {{- end }}
+  rules:
+    - matches:
+        - path:
+            type: {{ .Values.ingress.pathType }}
+            value: {{ .Values.ingress.path }}
+      backendRefs:
+        - name: {{ include "adi-stack.fullname" . }}
+          port: {{ .Values.service.ports.rpc }}
+{{- end }}

@@ -1,0 +1,43 @@
+{{- if and .Values.ingress.enabled (eq (include "adi-stack.ingressType" .) "gateway") }}
+{{- if and .Values.ingress.gateway.className (not .Values.ingress.gateway.gatewayName) }}
+# Create a Gateway if className is specified but gatewayName is not
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: {{ include "adi-stack.fullname" . }}
+  labels:
+    {{- include "adi-stack.labels" . | nindent 4 }}
+spec:
+  gatewayClassName: {{ .Values.ingress.gateway.className }}
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      {{- if .Values.ingress.hostname }}
+      hostname: {{ .Values.ingress.hostname | quote }}
+      {{- end }}
+      allowedRoutes:
+        namespaces:
+          from: Same
+    {{- if .Values.ingress.tls.enabled }}
+    - name: https
+      protocol: HTTPS
+      port: 443
+      {{- if .Values.ingress.hostname }}
+      hostname: {{ .Values.ingress.hostname | quote }}
+      {{- end }}
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            {{- if .Values.ingress.tls.secretName }}
+            name: {{ .Values.ingress.tls.secretName }}
+            {{- else }}
+            name: {{ include "adi-stack.fullname" . }}-tls
+            {{- end }}
+      allowedRoutes:
+        namespaces:
+          from: Same
+    {{- end }}
+{{- end }}
+{{- end }}

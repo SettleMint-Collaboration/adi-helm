@@ -1,0 +1,31 @@
+{{- if and .Values.ingress.enabled (eq (include "adi-stack.ingressType" .) "route") }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ include "adi-stack.fullname" . }}
+  labels:
+    {{- include "adi-stack.labels" . | nindent 4 }}
+  {{- with .Values.ingress.route.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.ingress.hostname }}
+  host: {{ .Values.ingress.hostname | quote }}
+  {{- end }}
+  {{- if ne .Values.ingress.path "/" }}
+  path: {{ .Values.ingress.path }}
+  {{- end }}
+  to:
+    kind: Service
+    name: {{ include "adi-stack.fullname" . }}
+    weight: 100
+  port:
+    targetPort: rpc
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    termination: {{ .Values.ingress.route.termination }}
+    insecureEdgeTerminationPolicy: {{ .Values.ingress.route.insecureEdgeTerminationPolicy }}
+  {{- end }}
+  wildcardPolicy: {{ .Values.ingress.route.wildcardPolicy }}
+{{- end }}

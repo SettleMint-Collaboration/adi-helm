@@ -1,0 +1,28 @@
+apiVersion: v2
+name: adi-stack
+description: ADI Stack External Node for zkOS L2 blockchain
+type: application
+version: 0.1.0
+appVersion: "0.10.0"
+kubeVersion: ">=1.24.0-0"
+keywords:
+  - blockchain
+  - zkos
+  - adi
+  - l2
+  - zksync
+  - ethereum
+maintainers:
+  - name: ADI Foundation Labs
+    url: https://github.com/ADI-Foundation-Labs
+home: https://github.com/ADI-Foundation-Labs/ADI-Stack-EN-Setup-script
+sources:
+  - https://github.com/ADI-Foundation-Labs/ADI-Stack-EN-Setup-script
+icon: https://raw.githubusercontent.com/ADI-Foundation-Labs/ADI-Stack-EN-Setup-script/main/logo.png
+annotations:
+  artifacthub.io/license: MIT
+  artifacthub.io/links: |
+    - name: Documentation
+      url: https://github.com/ADI-Foundation-Labs/ADI-Network-Documentation
+    - name: Source
+      url: https://github.com/ADI-Foundation-Labs/ADI-Stack-EN-Setup-script

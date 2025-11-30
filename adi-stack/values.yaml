@@ -1,0 +1,556 @@
+# ADI Stack Helm Chart Values
+# https://github.com/ADI-Foundation-Labs/ADI-Stack-EN-Setup-script
+
+# -- Global settings
+global:
+  # -- Image registry to use for all images
+  imageRegistry: ""
+  # -- Image pull secrets for all pods
+  imagePullSecrets: []
+
+# -- Image pull secrets (can also use global.imagePullSecrets)
+imagePullSecrets: []
+  # - harbor-registry
+
+# -- Override chart name
+nameOverride: ""
+# -- Override full name
+fullnameOverride: ""
+
+# -- Genesis configuration for the blockchain
+genesis:
+  # -- Bridgehub contract address
+  bridgehubAddress: "0xc1662F0478e0E93Dc6CC321281Eb180A21036Da6"
+  # -- Chain ID
+  chainId: "36900"
+  # -- Main node RPC URL
+  mainNodeRpcUrl: "https://rpc.ab.testnet.adifoundation.ai/"
+
+# -- L1 RPC configuration
+l1Rpc:
+  # -- L1 RPC URL (REQUIRED unless reth.enabled - no default for security)
+  url: ""
+  # -- Use existing secret for L1 RPC URL
+  existingSecret: ""
+  # -- Key in existing secret
+  existingSecretKey: "l1-rpc-url"
+
+# -- Reth Ethereum Node (optional internal L1 RPC)
+# When enabled, provides an internal Ethereum mainnet node for L1 RPC queries.
+# This eliminates the need for external RPC providers.
+reth:
+  # -- Enable Reth deployment (provides internal L1 RPC)
+  enabled: true
+
+  # -- Number of replicas (1 recommended for blockchain nodes)
+  replicaCount: 1
+
+  # -- Image configuration
+  image:
+    # -- Image registry
+    registry: ghcr.io
+    # -- Image repository
+    repository: paradigmxyz/reth
+    # -- Image tag
+    tag: "v1.1.0"
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+
+  # -- Ethereum network
+  chain: mainnet
+
+  # -- Sync mode (checkpoint, snap, or full)
+  syncMode: checkpoint
+
+  # -- Custom checkpoint sync URL (optional)
+  checkpointUrl: ""
+
+  # -- HTTP RPC port
+  httpPort: 8545
+
+  # -- RPC API namespaces to expose
+  httpApi: "eth,net,web3"
+
+  # -- P2P port for peer discovery
+  p2pPort: 30303
+
+  # -- Custom bootnodes (optional)
+  bootnodes: []
+
+  # -- Enable metrics endpoint
+  metricsEnabled: true
+
+  # -- Metrics port
+  metricsPort: 9001
+
+  # -- Persistent storage for blockchain data
+  persistence:
+    # -- Enable persistent storage
+    enabled: true
+    # -- Storage size (mainnet requires ~1.5TB)
+    size: 1500Gi
+    # -- Storage class (empty string uses cluster default)
+    storageClass: ""
+    # -- Access mode
+    accessMode: ReadWriteOnce
+
+  # -- Resource requests and limits (mainnet requirements)
+  resources:
+    requests:
+      cpu: "4"
+      memory: "16Gi"
+    limits:
+      cpu: "8"
+      memory: "32Gi"
+
+  # -- Pod security context (ignored if openshift.enabled)
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    seccompProfile:
+      type: RuntimeDefault
+
+  # -- Container security context (ignored if openshift.enabled)
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    runAsUser: 1000
+    capabilities:
+      drop:
+        - ALL
+
+  # -- Liveness probe configuration
+  livenessProbe:
+    # -- Initial delay before probe starts (long for initial sync)
+    initialDelaySeconds: 60
+    # -- Period between probes
+    periodSeconds: 30
+    # -- Timeout for each probe
+    timeoutSeconds: 10
+    # -- Number of failures before pod is restarted
+    failureThreshold: 3
+
+  # -- Readiness probe configuration
+  readinessProbe:
+    # -- Initial delay before probe starts
+    initialDelaySeconds: 30
+    # -- Period between probes
+    periodSeconds: 10
+    # -- Timeout for each probe
+    timeoutSeconds: 5
+    # -- Number of failures before pod is marked unready
+    failureThreshold: 3
+
+  # -- Node selector
+  nodeSelector: {}
+
+  # -- Tolerations
+  tolerations: []
+
+  # -- Affinity rules
+  affinity: {}
+
+  # -- Extra arguments for reth node command
+  extraArgs: []
+
+# -- External Node (StatefulSet)
+externalNode:
+  # -- Enable external node deployment
+  enabled: true
+
+  # -- Number of replicas (1 recommended for blockchain nodes)
+  replicaCount: 1
+
+  # -- Image configuration
+  image:
+    # -- Image registry
+    registry: harbor.sre.ideasoft.io
+    # -- Image repository
+    repository: adi-chain/external-node
+    # -- Image tag (defaults to Chart.appVersion)
+    tag: ""
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+
+  # -- Update strategy for StatefulSet
+  updateStrategy:
+    # -- Type of update strategy (RollingUpdate or OnDelete)
+    type: RollingUpdate
+
+  # -- Log level (RUST_LOG format)
+  logLevel: "info,zksync_os_server=info,zksync_os_sequencer=info,zksync_os_merkle_tree=info,zksync_os_priority_tree=info,zksync_os_server::prover_api=info"
+
+  # -- Persistent storage for blockchain data
+  persistence:
+    # -- Storage size
+    size: 100Gi
+    # -- Access mode
+    accessMode: ReadWriteOnce
+    # -- Storage class (empty string uses cluster default)
+    storageClass: ""
+
+  # -- Resource requests and limits
+  resources:
+    requests:
+      memory: "4Gi"
+      cpu: "1"
+    limits:
+      memory: "8Gi"
+      cpu: "4"
+
+  # -- Pod security context (ignored if openshift.enabled)
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    seccompProfile:
+      type: RuntimeDefault
+
+  # -- Container security context (ignored if openshift.enabled)
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+    runAsNonRoot: true
+    runAsUser: 1000
+    capabilities:
+      drop:
+        - ALL
+
+  # -- Liveness probe configuration
+  livenessProbe:
+    # -- Initial delay before probe starts
+    initialDelaySeconds: 60
+    # -- Period between probes
+    periodSeconds: 30
+    # -- Timeout for each probe
+    timeoutSeconds: 10
+    # -- Number of failures before pod is restarted
+    failureThreshold: 5
+
+  # -- Readiness probe configuration
+  readinessProbe:
+    # -- Initial delay before probe starts
+    initialDelaySeconds: 30
+    # -- Period between probes
+    periodSeconds: 10
+    # -- Timeout for each probe
+    timeoutSeconds: 5
+    # -- Number of failures before pod is marked unready
+    failureThreshold: 3
+
+  # -- Extra environment variables
+  extraEnv: []
+  #   - name: CUSTOM_VAR
+  #     value: "custom-value"
+
+  # -- Extra volume mounts
+  extraVolumeMounts: []
+
+  # -- Extra volumes
+  extraVolumes: []
+
+# -- Cloudflared TCP Proxy (Deployment)
+cloudflared:
+  # -- Enable cloudflared deployment
+  enabled: true
+
+  # -- Number of replicas
+  replicaCount: 1
+
+  # -- Image configuration
+  image:
+    # -- Image registry
+    registry: docker.io
+    # -- Image repository
+    repository: cloudflare/cloudflared
+    # -- Image tag
+    tag: "2025.11.1"
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+
+  # -- Replay endpoint hostname
+  replayHostname: "replay.ab.testnet.adifoundation.ai"
+
+  # -- Listener port
+  listenerPort: 3053
+
+  # -- Resource requests and limits
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+
+  # -- Pod security context
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    seccompProfile:
+      type: RuntimeDefault
+
+  # -- Container security context
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    capabilities:
+      drop:
+        - ALL
+
+# -- Proof Sync (Deployment)
+proofSync:
+  # -- Enable proof-sync deployment
+  enabled: true
+
+  # -- Number of replicas
+  replicaCount: 1
+
+  # -- Image configuration
+  image:
+    # -- Image registry
+    registry: docker.io
+    # -- Image repository
+    repository: peterdavehello/azcopy
+    # -- Image tag
+    tag: "10.27.1"
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+
+  # -- Azure Blob Storage URL for proofs
+  storageUrl: "https://adiproofs.blob.core.windows.net/shared"
+
+  # -- Sync interval in seconds
+  syncInterval: 60
+
+  # -- Delete destination files not in source
+  deleteDestination: "false"
+
+  # -- Resource requests and limits
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+
+  # -- Pod security context
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    seccompProfile:
+      type: RuntimeDefault
+
+  # -- Container security context
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+    runAsNonRoot: true
+    capabilities:
+      drop:
+        - ALL
+
+# -- Service Account configuration
+serviceAccount:
+  # -- Create a service account
+  create: true
+  # -- Service account name (auto-generated if empty)
+  name: ""
+  # -- Annotations for service account
+  annotations: {}
+  # AWS EKS IRSA:
+  # eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT:role/ROLE
+  # GKE Workload Identity:
+  # iam.gke.io/gcp-service-account: SA@PROJECT.iam.gserviceaccount.com
+  # Azure Workload Identity:
+  # azure.workload.identity/client-id: CLIENT_ID
+
+# -- RBAC configuration
+rbac:
+  # -- Create RBAC resources
+  create: true
+  # -- Additional RBAC rules
+  rules: []
+
+# -- Service configuration
+service:
+  # -- Service type
+  type: ClusterIP
+  # -- Service ports
+  ports:
+    rpc: 3050
+    health: 3071
+    replay: 3054
+    metrics: 3312
+  # -- Service annotations
+  annotations: {}
+  # -- Session affinity
+  sessionAffinity: None
+
+# -- Ingress configuration
+ingress:
+  # -- Ingress type: ingress, gateway, route, or auto (detect platform)
+  type: auto
+
+  # -- Enable ingress
+  enabled: false
+
+  # -- Hostname for ingress
+  hostname: ""
+
+  # -- Path for ingress
+  path: /
+  # -- Path type
+  pathType: Prefix
+
+  # -- TLS configuration
+  tls:
+    # -- Enable TLS
+    enabled: true
+    # -- TLS secret name (auto-generated if empty with cert-manager)
+    secretName: ""
+
+  # -- Kubernetes Ingress specific
+  kubernetes:
+    # -- Ingress class name
+    className: nginx
+    # -- Ingress annotations
+    annotations: {}
+    # nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+
+  # -- Gateway API specific
+  gateway:
+    # -- Gateway class name
+    className: ""
+    # -- Gateway name to attach to
+    gatewayName: ""
+    # -- Gateway listener section name
+    sectionName: ""
+
+  # -- OpenShift Route specific
+  route:
+    # -- TLS termination type (edge, passthrough, reencrypt)
+    termination: edge
+    # -- Insecure edge termination policy
+    insecureEdgeTerminationPolicy: Redirect
+    # -- Wildcard policy
+    wildcardPolicy: None
+    # -- Route annotations
+    annotations: {}
+
+# -- OpenShift specific settings
+openshift:
+  # -- Enable OpenShift-specific configurations
+  enabled: false
+  # -- Route settings
+  route:
+    # -- Create OpenShift Route
+    enabled: true
+
+# -- Network policies
+networkPolicy:
+  # -- Enable network policies
+  enabled: false
+  # -- Ingress rules
+  ingress: []
+  #   - from:
+  #       - namespaceSelector:
+  #           matchLabels:
+  #             kubernetes.io/metadata.name: ingress-nginx
+  #     ports:
+  #       - port: 3050
+  #       - port: 3071
+  # -- Egress rules
+  egress: []
+  #   - to:
+  #       - ipBlock:
+  #           cidr: 0.0.0.0/0
+  #     ports:
+  #       - port: 443
+  #       - port: 8545
+
+# -- Pod Disruption Budget
+podDisruptionBudget:
+  # -- Enable PDB
+  enabled: false
+  # -- Minimum available pods
+  minAvailable: 1
+  # -- Maximum unavailable pods (alternative to minAvailable)
+  # maxUnavailable: 0
+
+# -- Metrics and monitoring
+metrics:
+  # -- ServiceMonitor for Prometheus Operator
+  serviceMonitor:
+    # -- Enable ServiceMonitor
+    enabled: false
+    # -- Scrape interval
+    interval: 30s
+    # -- Scrape timeout
+    scrapeTimeout: 10s
+    # -- Additional labels for ServiceMonitor
+    labels: {}
+    # -- Namespace for ServiceMonitor (defaults to release namespace)
+    namespace: ""
+    # -- Metric relabeling configs
+    metricRelabelings: []
+    # -- Relabeling configs
+    relabelings: []
+
+  # -- PrometheusRule for alerting
+  prometheusRule:
+    # -- Enable PrometheusRule
+    enabled: false
+    # -- Additional labels for PrometheusRule
+    labels: {}
+    # -- Alerting rules
+    rules: []
+
+# -- Node scheduling
+# -- Node selector
+nodeSelector: {}
+
+# -- Tolerations
+tolerations: []
+
+# -- Affinity rules
+affinity: {}
+
+# -- Topology spread constraints
+topologySpreadConstraints: []
+#   - maxSkew: 1
+#     topologyKey: topology.kubernetes.io/zone
+#     whenUnsatisfiable: ScheduleAnyway
+#     labelSelector:
+#       matchLabels:
+#         app.kubernetes.io/name: adi-stack
+
+# -- Priority class name
+priorityClassName: ""
+
+# -- Termination grace period
+terminationGracePeriodSeconds: 30
+
+# -- Common labels for all resources
+commonLabels: {}
+
+# -- Common annotations for all resources
+commonAnnotations: {}
+
+# -- Extra objects to deploy
+extraObjects: []
+#   - apiVersion: v1
+#     kind: ConfigMap
+#     metadata:
+#       name: extra-config
+#     data:
+#       key: value

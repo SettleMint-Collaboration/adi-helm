@@ -1,0 +1,159 @@
+# Example values for ADI Stack on OpenShift (Mainnet)
+# Copy and customize for your environment
+
+# Genesis configuration - REQUIRED
+genesis:
+  bridgehubAddress: "0x0000000000000000000000000000000000000000"
+  chainId: "270"
+  mainNodeRpcUrl: "https://mainnet.example.com"
+
+# Reth Ethereum Node - Internal L1 RPC (recommended for production)
+# Provides a self-hosted Ethereum mainnet node, eliminating external RPC dependencies
+reth:
+  enabled: true
+  image:
+    tag: "v1.1.0" # Pin to specific version
+  chain: mainnet
+  syncMode: checkpoint
+  persistence:
+    size: 2000Gi # Extra headroom for mainnet growth
+    storageClass: "" # Uses OpenShift default storage class
+  resources:
+    requests:
+      cpu: "8"
+      memory: "32Gi"
+    limits:
+      cpu: "16"
+      memory: "64Gi"
+
+# L1 RPC configuration - Not needed when reth.enabled=true
+# Uncomment below to use external RPC instead of internal Reth
+# l1Rpc:
+#   existingSecret:
+#     name: l1-rpc-credentials
+#     key: url
+
+# OpenShift-specific settings
+openshift:
+  enabled: true
+  # Security context compatible with restricted SCC
+  securityContext:
+    runAsNonRoot: true
+    # Do NOT set runAsUser - OpenShift assigns from namespace range
+    seccompProfile:
+      type: RuntimeDefault
+
+# External node
+externalNode:
+  image:
+    tag: "v0.10.0"
+  resources:
+    requests:
+      memory: "4Gi"
+      cpu: "2"
+    limits:
+      memory: "8Gi"
+      cpu: "4"
+  persistence:
+    size: 200Gi
+    storageClass: "" # Uses cluster default
+
+# Cloudflared
+cloudflared:
+  enabled: true
+  existingSecret:
+    name: cloudflared-credentials
+    key: tunnel-token
+
+# Proof sync
+proofSync:
+  enabled: true
+  existingSecret:
+    name: azure-storage-credentials
+    key: sas-token
+  azureStorageAccount: "adistorage"
+  azureContainerName: "proofs"
+
+# Use OpenShift Routes instead of Ingress
+ingress:
+  enabled: true
+  type: route # Explicitly use OpenShift Routes
+  hostname: adi.apps.openshift.example.com
+  path: /
+  tls:
+    enabled: true
+  route:
+    annotations:
+      haproxy.router.openshift.io/timeout: 3600s
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+    wildcardPolicy: None
+
+# ServiceAccount - let OpenShift manage
+serviceAccount:
+  create: true
+  annotations:
+    # For AWS STS integration
+    # eks.amazonaws.com/role-arn: arn:aws:iam::123456789:role/adi-stack-role
+
+# RBAC - minimal permissions
+rbac:
+  create: true
+  rules: [] # No special permissions needed
+
+# Network policies - works with OpenShift SDN
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              network.openshift.io/policy-group: ingress
+      ports:
+        - protocol: TCP
+          port: 3050
+        - protocol: TCP
+          port: 3071
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 8545
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Prometheus monitoring via OpenShift User Workload Monitoring
+metrics:
+  serviceMonitor:
+    enabled: true
+    namespace: openshift-user-workload-monitoring
+    interval: 30s
+    labels:
+      # Required for OpenShift User Workload Monitoring
+      prometheus: user-workload
+
+# Security context - OpenShift restricted SCC compatible
+# These are overridden by openshift.securityContext when openshift.enabled=true
+securityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true

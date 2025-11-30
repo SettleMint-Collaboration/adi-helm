@@ -1,0 +1,135 @@
+Thank you for installing {{ .Chart.Name }}!
+
+Your release is named: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+
+=======================================================================
+                     ADI Stack External Node
+=======================================================================
+
+{{- if .Values.reth.enabled }}
+
+=== INTERNAL ETHEREUM NODE (RETH) ===
+
+Reth is enabled and will provide L1 RPC for the external-node.
+
+Service: http://{{ include "adi-stack.fullname" . }}-reth:{{ .Values.reth.httpPort }}
+
+IMPORTANT: Initial sync may take 6-24 hours depending on network conditions.
+During this time, the external-node may show L1 RPC errors.
+
+Monitor sync progress:
+  kubectl logs -n {{ .Release.Namespace }} -f -l "app.kubernetes.io/name={{ include "adi-stack.name" . }},app.kubernetes.io/component=reth"
+
+Check sync status via RPC:
+  kubectl exec -n {{ .Release.Namespace }} -it {{ include "adi-stack.fullname" . }}-reth-0 -- \
+    wget -qO- --header="Content-Type: application/json" \
+      --post-data='{"jsonrpc":"2.0","method":"eth_syncing","params":[],"id":1}' \
+      http://localhost:{{ .Values.reth.httpPort }}
+
+Storage: {{ .Values.reth.persistence.size }} (ensure sufficient space for mainnet ~1.5TB)
+{{- end }}
+
+{{- if .Values.externalNode.enabled }}
+
+EXTERNAL NODE STATUS:
+---------------------
+To check the status of your external node:
+
+  kubectl get pods -n {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "adi-stack.name" . }},app.kubernetes.io/component=external-node"
+
+To view logs:
+
+  kubectl logs -n {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "adi-stack.name" . }},app.kubernetes.io/component=external-node" -f
+
+{{- end }}
+
+ACCESSING THE RPC ENDPOINT:
+---------------------------
+{{- if .Values.ingress.enabled }}
+{{- $ingressType := include "adi-stack.ingressType" . }}
+{{- if eq $ingressType "ingress" }}
+{{- if .Values.ingress.tls.enabled }}
+  RPC Endpoint: https://{{ .Values.ingress.hostname }}{{ .Values.ingress.path }}
+{{- else }}
+  RPC Endpoint: http://{{ .Values.ingress.hostname }}{{ .Values.ingress.path }}
+{{- end }}
+{{- else if eq $ingressType "gateway" }}
+  RPC Endpoint: Check Gateway status for the assigned hostname
+
+  kubectl get gateway,httproute -n {{ .Release.Namespace }}
+{{- else if eq $ingressType "route" }}
+  RPC Endpoint: Check Route for the assigned hostname
+
+  oc get route -n {{ .Release.Namespace }} {{ include "adi-stack.fullname" . }}
+{{- end }}
+{{- else }}
+To access the RPC endpoint locally using port-forward:
+
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "adi-stack.fullname" . }} 3050:{{ .Values.service.ports.rpc }}
+
+Then access at: http://localhost:3050
+{{- end }}
+
+HEALTH CHECK:
+-------------
+To verify the node is healthy:
+
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "adi-stack.fullname" . }} 3071:{{ .Values.service.ports.health }}
+  curl http://localhost:3071/health
+
+{{- if .Values.metrics.serviceMonitor.enabled }}
+
+METRICS:
+--------
+ServiceMonitor is enabled. Prometheus should automatically discover and scrape metrics.
+
+To manually check metrics:
+
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "adi-stack.fullname" . }} 3312:{{ .Values.service.ports.metrics }}
+  curl http://localhost:3312/metrics
+{{- end }}
+
+CONFIGURATION:
+--------------
+Genesis Chain ID: {{ .Values.genesis.chainId }}
+Main Node RPC: {{ .Values.genesis.mainNodeRpcUrl }}
+{{- if .Values.reth.enabled }}
+L1 RPC URL: Using internal Reth node (http://{{ include "adi-stack.fullname" . }}-reth:{{ .Values.reth.httpPort }})
+{{ include "adi-stack.warnL1RpcConflict" . }}
+{{- else if not .Values.l1Rpc.existingSecret }}
+{{- if .Values.l1Rpc.url }}
+L1 RPC URL: Configured via secret
+{{- else }}
+
+WARNING: L1 RPC URL is not configured!
+Please set l1Rpc.url, l1Rpc.existingSecret, or reth.enabled=true in your values.
+{{- end }}
+{{- else }}
+L1 RPC URL: Using existing secret '{{ .Values.l1Rpc.existingSecret }}'
+{{- end }}
+
+PERSISTENT STORAGE:
+-------------------
+Chain data is stored in a PersistentVolumeClaim:
+  Size: {{ .Values.externalNode.persistence.size }}
+  Access Mode: {{ .Values.externalNode.persistence.accessMode }}
+{{- if .Values.externalNode.persistence.storageClass }}
+  Storage Class: {{ .Values.externalNode.persistence.storageClass }}
+{{- else }}
+  Storage Class: (cluster default)
+{{- end }}
+
+=======================================================================
+
+For more information, visit:
+  https://github.com/ADI-Foundation-Labs/ADI-Stack-EN-Setup-script
+
+To upgrade your release:
+  helm upgrade {{ .Release.Name }} adi-stack -n {{ .Release.Namespace }} -f your-values.yaml
+
+To uninstall:
+  helm uninstall {{ .Release.Name }} -n {{ .Release.Namespace }}
+
+NOTE: Uninstalling will NOT delete PersistentVolumeClaims. To remove data:
+  kubectl delete pvc -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
