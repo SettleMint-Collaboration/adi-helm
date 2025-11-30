@@ -12,16 +12,25 @@ A production-ready Helm chart for deploying the ADI Stack (zkOS External Node) o
 
 ## Installation
 
+### From Helm Repository (Recommended)
+
 ```bash
-# Add the Helm repository (if published)
-helm repo add adi https://charts.example.com/adi
+# Add the repository
+helm repo add adi-helm https://settlemint.github.io/adi-helm
 helm repo update
 
-# Install with default values
-helm install adi-stack adi/adi-stack
+# Install the chart
+helm install adi-stack adi-helm/adi-stack \
+  --namespace adi-stack \
+  --create-namespace \
+  -f values.yaml
+```
 
-# Install with custom values
-helm install adi-stack adi/adi-stack -f my-values.yaml
+### From Source
+
+```bash
+git clone https://github.com/settlemint/adi-helm
+helm install adi-stack ./adi-helm/adi-stack -f values.yaml
 ```
 
 ## Configuration
