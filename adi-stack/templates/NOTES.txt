@@ -128,9 +128,6 @@ Chain data is stored in a PersistentVolumeClaim:
 
 =======================================================================
 
-For more information, visit:
-  https://github.com/ADI-Foundation-Labs/ADI-Stack-EN-Setup-script
-
 To upgrade your release:
   helm upgrade {{ .Release.Name }} adi-stack -n {{ .Release.Namespace }} -f your-values.yaml
 
