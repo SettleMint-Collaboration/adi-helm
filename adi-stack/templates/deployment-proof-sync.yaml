@@ -22,6 +22,7 @@ spec:
         {{- include "adi-stack.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: proof-sync
       annotations:
+        {{- include "adi-stack.podAnnotations" . | nindent 8 }}
         checksum/script: {{ include (print $.Template.BasePath "/configmap-sync-script.yaml") . | sha256sum }}
     spec:
       serviceAccountName: {{ include "adi-stack.serviceAccountName" . }}

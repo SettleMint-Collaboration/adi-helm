@@ -22,6 +22,8 @@ spec:
       labels:
         {{- include "adi-stack.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: reth
+      annotations:
+        {{- include "adi-stack.podAnnotations" . | nindent 8 }}
     spec:
       serviceAccountName: {{ include "adi-stack.serviceAccountName" . }}
       {{- include "adi-stack.imagePullSecrets" . | nindent 6 }}

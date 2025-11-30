@@ -200,6 +200,9 @@ checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sh
 {{- if not .Values.l1Rpc.existingSecret }}
 checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
 {{- end }}
+{{- range $key, $value := .Values.podAnnotations }}
+{{ $key }}: {{ $value | quote }}
+{{- end }}
 {{- end }}
 
 {{/*
