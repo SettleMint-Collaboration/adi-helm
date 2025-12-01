@@ -57,7 +57,7 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 Labels for immutable resources (PVCs) - excludes version which changes
 */}}
 {{- define "adi-stack.immutableLabels" -}}
-helm.sh/chart: {{ include "adi-stack.chart" . }}
+helm.sh/chart: {{ .Chart.Name }}
 {{ include "adi-stack.selectorLabels" . }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- with .Values.commonLabels }}
