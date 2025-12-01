@@ -1,0 +1,34 @@
+{{- if and .Values.ingress.enabled .Values.ingress.tls.enabled }}
+{{- $ingressType := include "adi-stack.ingressType" . }}
+{{- if and (eq $ingressType "gateway") .Values.ingress.certManager.enabled }}
+# Certificate for Gateway API TLS
+# cert-manager will create the secret referenced by the Gateway
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "adi-stack.fullname" . }}-tls
+  labels:
+    {{- include "adi-stack.labels" . | nindent 4 }}
+spec:
+  secretName: {{ .Values.ingress.tls.secretName | default (printf "%s-tls" (include "adi-stack.fullname" .)) }}
+  {{- if .Values.ingress.certManager.duration }}
+  duration: {{ .Values.ingress.certManager.duration }}
+  {{- end }}
+  {{- if .Values.ingress.certManager.renewBefore }}
+  renewBefore: {{ .Values.ingress.certManager.renewBefore }}
+  {{- end }}
+  issuerRef:
+    {{- if .Values.ingress.certManager.issuerRef }}
+    name: {{ .Values.ingress.certManager.issuerRef.name }}
+    kind: {{ .Values.ingress.certManager.issuerRef.kind | default "ClusterIssuer" }}
+    {{- if .Values.ingress.certManager.issuerRef.group }}
+    group: {{ .Values.ingress.certManager.issuerRef.group }}
+    {{- end }}
+    {{- else }}
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+    {{- end }}
+  dnsNames:
+    - {{ .Values.ingress.hostname | required "ingress.hostname is required when using cert-manager with Gateway API" }}
+{{- end }}
+{{- end }}

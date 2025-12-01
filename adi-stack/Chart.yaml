@@ -2,7 +2,7 @@ apiVersion: v2
 name: adi-stack
 description: ADI Stack External Node for zkOS L2 blockchain
 type: application
-version: 0.1.2
+version: 0.1.3
 appVersion: "v0.10.1-b5"
 kubeVersion: ">=1.24.0-0"
 keywords:

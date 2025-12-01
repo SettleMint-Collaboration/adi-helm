@@ -37,7 +37,7 @@ The ADI Stack Helm Chart provides a production-ready deployment solution for run
 - **Multi-Cloud Ready** - Optimized configurations for AWS EKS, Google GKE, and Azure AKS
 - **Integrated Ethereum Node** - Built-in Erigon node with Caplin consensus layer for L1 RPC
 - **Performance Tiers** - Pre-configured resource profiles for development, testnet, and production
-- **Flexible Ingress** - Auto-detection for Kubernetes Ingress, Gateway API, or OpenShift Routes
+- **Flexible Ingress** - Contour HTTPProxy with timeout support for JSON-RPC workloads
 - **Enterprise Security** - OpenShift restricted SCC compatible, Pod Security Standards compliant
 - **Cloudflare Tunnel** - Built-in Cloudflared support for secure external access
 - **Monitoring Ready** - Prometheus ServiceMonitor support out of the box
@@ -47,182 +47,282 @@ The ADI Stack Helm Chart provides a production-ready deployment solution for run
 ### Prerequisites
 
 - Kubernetes 1.24+ or OpenShift 4.12+
-- Helm 3.x or 4.x (both supported, v4 recommended for new installations)
-- PersistentVolume provisioner support
-- (Optional) Prometheus Operator for ServiceMonitor
-
-> **Helm v4 Users**: This chart fully supports Helm v4 with Server-Side Apply (SSA), values schema validation, and OCI digest support.
+- Helm 3.x or 4.x
+- kubectl configured for your cluster
+- jq (for force cleanup operations)
 
 ### Installation
 
-Add the Helm repository:
-
-```bash
-helm repo add adi-stack https://settlemint.github.io/adi-helm
-helm repo update
-```
-
-Install with Helm using layered values files:
-
-```bash
-# Testnet deployment
-helm install adi-stack adi-stack/adi-stack \
-  -n adi-stack --create-namespace \
-  -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-testnet.yaml
-
-# Mainnet on AWS with high performance
-helm install adi-stack adi-stack/adi-stack \
-  -n adi-stack --create-namespace \
-  -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-production.yaml \
-  -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-cloud-aws.yaml \
-  -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-performance-high.yaml
-
-# OpenShift testnet
-helm install adi-stack adi-stack/adi-stack \
-  -n adi-stack --create-namespace \
-  -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-openshift-testnet.yaml
-
-# OpenShift mainnet
-helm install adi-stack adi-stack/adi-stack \
-  -n adi-stack --create-namespace \
-  -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-openshift-mainnet.yaml
-
-# Using external L1 RPC instead of built-in Erigon
-helm install adi-stack adi-stack/adi-stack \
-  -n adi-stack --create-namespace \
-  -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-testnet.yaml \
-  --set erigon.enabled=false \
-  --set l1Rpc.url=https://eth-sepolia.example.com
-```
-
-### Using the Install Script
-
-For local development or when cloning the repository, use the install script:
+Clone the repository and use the provided scripts:
 
 ```bash
 git clone https://github.com/settlemint/adi-helm.git
 cd adi-helm
-
-# Basic testnet deployment
-./install.sh testnet
-
-# Mainnet with cloud optimizations
-./install.sh mainnet --cloud aws --performance high
-
-# Using external L1 RPC (disable Erigon)
-./install.sh testnet \
-  -s erigon.enabled=false \
-  -s l1Rpc.url=https://eth-sepolia.example.com
-
-# Multiple --set flags can be combined
-./install.sh mainnet \
-  -s erigon.enabled=false \
-  -s l1Rpc.url=https://eth-mainnet.example.com \
-  -s genesis.chainId=36900
 ```
+
+#### Step 1: Install Support Infrastructure
+
+Install Contour (ingress controller) and optionally cert-manager (TLS):
+
+```bash
+# AWS EKS
+./install-support.sh -c aws
+
+# AWS EKS with TLS
+./install-support.sh -c aws -t -e admin@example.com
+
+# Google GKE with TLS
+./install-support.sh -c gke -t -e admin@example.com
+
+# Azure AKS with TLS
+./install-support.sh -c azure -t -e admin@example.com
+```
+
+#### Step 2: Install ADI Stack
+
+Deploy testnet or mainnet:
+
+```bash
+# Testnet with Contour ingress
+./install.sh testnet \
+  -n adi-testnet \
+  -c aws \
+  -p low \
+  -i contour \
+  -s ingress.hostname=testnet.example.com
+
+# Mainnet with Contour ingress and TLS
+./install.sh mainnet \
+  -n adi-mainnet \
+  -c aws \
+  -p high \
+  -i contour \
+  -t \
+  -s ingress.hostname=mainnet.example.com
+
+# Testnet with external L1 RPC (no Erigon)
+./install.sh testnet \
+  -n adi-testnet \
+  -c aws \
+  -i contour \
+  -s erigon.enabled=false \
+  -s l1Rpc.url=https://eth-sepolia.example.com \
+  -s ingress.hostname=testnet.example.com
+```
+
+#### Step 3: Configure DNS
+
+Point your domains to the LoadBalancer:
+
+```bash
+# Get LoadBalancer address
+kubectl get svc -n gateway contour-envoy \
+  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+```
+
+Create DNS records:
+
+- `testnet.example.com -> <loadbalancer-address>`
+- `mainnet.example.com -> <loadbalancer-address>`
+
+### Uninstallation
+
+```bash
+# Uninstall adi-stack from a namespace
+./uninstall.sh -n adi-testnet
+
+# Force uninstall (handles stuck resources)
+./uninstall.sh -n adi-testnet -f
+
+# Uninstall all adi-stack deployments
+./uninstall.sh -a -f
+
+# Uninstall support infrastructure
+./uninstall-support.sh -f
+```
+
+## Script Reference
+
+### install-support.sh
+
+Installs Contour and cert-manager in your cluster.
+
+| Flag | Long Form   | Description                       |
+| ---- | ----------- | --------------------------------- |
+| `-c` | `--cloud`   | Cloud provider: aws, gke, azure   |
+| `-t` | `--tls`     | Install cert-manager for TLS      |
+| `-e` | `--email`   | Email for Let's Encrypt (with -t) |
+| `-u` | `--upgrade` | Upgrade existing installations    |
+| `-d` | `--dry-run` | Show what would be installed      |
+
+### install.sh
+
+Installs adi-stack with layered configuration.
+
+| Flag | Long Form        | Description                         |
+| ---- | ---------------- | ----------------------------------- |
+|      | `testnet`        | Deploy with Sepolia testnet         |
+|      | `mainnet`        | Deploy with Ethereum mainnet        |
+| `-n` | `--namespace`    | Kubernetes namespace                |
+| `-c` | `--cloud`        | Cloud provider: aws, gke, azure     |
+| `-p` | `--performance`  | Performance tier: low, medium, high |
+| `-i` | `--ingress`      | Ingress: contour, nginx, none       |
+| `-t` | `--cert-manager` | Enable TLS with cert-manager        |
+| `-o` | `--openshift`    | Use OpenShift-specific values       |
+| `-s` | `--set`          | Set Helm values (repeatable)        |
+| `-f` | `--values`       | Additional values file              |
+| `-u` | `--upgrade`      | Upgrade existing release            |
+| `-d` | `--dry-run`      | Template only, don't install        |
+
+### uninstall.sh
+
+Removes adi-stack deployments with stuck resource handling.
+
+| Flag | Long Form     | Description                      |
+| ---- | ------------- | -------------------------------- |
+| `-n` | `--namespace` | Namespace to uninstall           |
+| `-r` | `--release`   | Helm release name                |
+| `-a` | `--all`       | Uninstall all adi-stack releases |
+| `-f` | `--force`     | Force removal of stuck resources |
+| `-d` | `--dry-run`   | Show what would be uninstalled   |
+
+### uninstall-support.sh
+
+Removes Contour and cert-manager with CRD cleanup.
+
+| Flag | Long Form            | Description                    |
+| ---- | -------------------- | ------------------------------ |
+| `-f` | `--force`            | Force removal of stuck CRDs    |
+| `-c` | `--contour-only`     | Only uninstall Contour         |
+| `-m` | `--certmanager-only` | Only uninstall cert-manager    |
+| `-d` | `--dry-run`          | Show what would be uninstalled |
 
 ## Configuration
 
-### Required Values
-
-| Parameter                  | Description                | Example                                      |
-| -------------------------- | -------------------------- | -------------------------------------------- |
-| `genesis.bridgehubAddress` | Bridgehub contract address | `0xc1662F0478e0E93Dc6CC321281Eb180A21036Da6` |
-| `genesis.chainId`          | Chain ID for the network   | `36900`                                      |
-| `genesis.mainNodeRpcUrl`   | Main node RPC URL          | `https://rpc.ab.testnet.adifoundation.ai/`   |
-
-### L1 RPC Configuration
-
-The chart supports two modes for L1 RPC access:
+### L1 RPC Options
 
 #### Built-in Erigon Node (Recommended)
 
-Erigon includes an integrated Caplin consensus layer, eliminating the need for a separate beacon node:
+Erigon includes an integrated Caplin consensus layer:
 
-```yaml
-erigon:
-  enabled: true
-  chain: mainnet # or "sepolia" for testnet
-  pruneMode: full # archive, full, or minimal
-  caplin:
-    enabled: true
-    checkpointSyncUrl: "https://beaconstate.info/eth/v2/debug/beacon/states/finalized"
-  persistence:
-    size: 2Ti # 500Gi for testnet/minimal
+```bash
+./install.sh mainnet -n adi-mainnet -c aws -p high
 ```
 
 #### External RPC Provider
 
-```yaml
-erigon:
-  enabled: false
-
-l1Rpc:
-  url: "https://eth-mainnet.example.com"
-  # Or use existing secret:
-  existingSecret:
-    name: l1-rpc-credentials
-    key: url
+```bash
+./install.sh testnet -n adi-testnet -c aws \
+  -s erigon.enabled=false \
+  -s l1Rpc.url=https://eth-sepolia.example.com
 ```
 
-### Example Configurations
+### Performance Tiers
+
+| Tier     | Use Case            | IOPS | Storage               |
+| -------- | ------------------- | ---- | --------------------- |
+| `low`    | Development/Testing | 3K   | Basic SSD             |
+| `medium` | Testnet nodes       | 16K  | SSD with provisioning |
+| `high`   | Production mainnet  | 64K+ | Premium/Hyperdisk     |
+
+### OpenShift Deployment
+
+```bash
+./install.sh testnet -n adi-testnet -o
+./install.sh mainnet -n adi-mainnet -o
+```
+
+## Values Files Reference
+
+All values files are in `adi-stack/examples/`:
 
 **Base configurations:**
 
-| File                                     | Description                     |
-| ---------------------------------------- | ------------------------------- |
-| `examples/values-testnet.yaml`           | Kubernetes testnet (Sepolia)    |
-| `examples/values-production.yaml`        | Kubernetes mainnet (production) |
-| `examples/values-openshift-testnet.yaml` | OpenShift testnet               |
-| `examples/values-openshift-mainnet.yaml` | OpenShift mainnet               |
+| File                            | Description                     |
+| ------------------------------- | ------------------------------- |
+| `values-testnet.yaml`           | Kubernetes testnet (Sepolia)    |
+| `values-production.yaml`        | Kubernetes mainnet (production) |
+| `values-openshift-testnet.yaml` | OpenShift testnet               |
+| `values-openshift-mainnet.yaml` | OpenShift mainnet               |
 
-**Cloud provider layers (combine with base):**
+**Cloud provider layers:**
 
-| File                               | Description                            |
-| ---------------------------------- | -------------------------------------- |
-| `examples/values-cloud-aws.yaml`   | AWS EKS (ALB ingress, gp3/io2 storage) |
-| `examples/values-cloud-gke.yaml`   | Google GKE (GCE ingress, premium-rwo)  |
-| `examples/values-cloud-azure.yaml` | Azure AKS (App Gateway, managed-csi)   |
+| File                      | Description                        |
+| ------------------------- | ---------------------------------- |
+| `values-cloud-aws.yaml`   | AWS EKS (gp3/io2 storage)          |
+| `values-cloud-gke.yaml`   | Google GKE (premium-rwo/hyperdisk) |
+| `values-cloud-azure.yaml` | Azure AKS (managed-csi-premium)    |
 
-**Performance tiers (combine with base and cloud):**
+**Performance tiers:**
 
-| File                                      | Description                    |
-| ----------------------------------------- | ------------------------------ |
-| `examples/values-performance-low.yaml`    | Development/testing (3K IOPS)  |
-| `examples/values-performance-medium.yaml` | Testnet nodes (16K IOPS)       |
-| `examples/values-performance-high.yaml`   | Production mainnet (64K+ IOPS) |
+| File                             | Description                    |
+| -------------------------------- | ------------------------------ |
+| `values-performance-low.yaml`    | Development/testing (3K IOPS)  |
+| `values-performance-medium.yaml` | Testnet nodes (16K IOPS)       |
+| `values-performance-high.yaml`   | Production mainnet (64K+ IOPS) |
 
-**Optional add-ons:**
+**Ingress and TLS:**
 
-| File                                   | Description                           |
-| -------------------------------------- | ------------------------------------- |
-| `examples/values-tls-certmanager.yaml` | TLS with cert-manager (Let's Encrypt) |
+| File                          | Description                     |
+| ----------------------------- | ------------------------------- |
+| `values-ingress-contour.yaml` | Contour HTTPProxy configuration |
+| `values-tls-certmanager.yaml` | TLS with cert-manager           |
+
+**Support infrastructure (in `examples/support/`):**
+
+| File                              | Description                 |
+| --------------------------------- | --------------------------- |
+| `contour-values-aws.yaml`         | Contour for AWS EKS         |
+| `contour-values-gke.yaml`         | Contour for Google GKE      |
+| `contour-values-azure.yaml`       | Contour for Azure AKS       |
+| `cert-manager-clusterissuer.yaml` | Let's Encrypt ClusterIssuer |
 
 ## Monitoring
 
-Check pod status and sync progress:
-
 ```bash
 # View all pods
-kubectl get pods -n adi-stack
+kubectl get pods -n adi-testnet
 
 # Monitor Erigon sync progress
-kubectl logs -n adi-stack -l app.kubernetes.io/component=erigon -f
+kubectl logs -n adi-testnet -l app.kubernetes.io/component=erigon -f
 
 # Monitor External Node logs
-kubectl logs -n adi-stack -l app.kubernetes.io/component=external-node -f
+kubectl logs -n adi-testnet -l app.kubernetes.io/component=external-node -f
 
 # Access RPC endpoint locally
-kubectl port-forward -n adi-stack svc/adi-stack-adi-stack 3050:3050
+kubectl port-forward -n adi-testnet svc/adi-stack-adi-stack 3050:3050
 ```
 
-## Schema Validation
+## Troubleshooting
 
-This chart includes a JSON schema (`values.schema.json`) for validating your configuration. Helm v4 uses this schema automatically during `helm install` and `helm upgrade` to catch configuration errors early.
+### Stuck Namespace Deletion
+
+If a namespace is stuck in `Terminating` state:
 
 ```bash
-# Validate your values file before deploying
-helm lint ./adi-stack -f my-values.yaml --strict
+./uninstall.sh -n <namespace> -f
+```
+
+### Stuck CRD Deletion
+
+If CRDs are stuck after uninstalling support infrastructure:
+
+```bash
+./uninstall-support.sh -f
+```
+
+### Manual Finalizer Removal
+
+For resources stuck with finalizers:
+
+```bash
+# Remove finalizers from a specific resource
+kubectl patch <resource-type> <name> -n <namespace> \
+  -p '{"metadata":{"finalizers":null}}' --type=merge
+
+# Example: stuck challenge
+kubectl patch challenge my-challenge -n adi-testnet \
+  -p '{"metadata":{"finalizers":null}}' --type=merge
 ```
 
 ## Contributing

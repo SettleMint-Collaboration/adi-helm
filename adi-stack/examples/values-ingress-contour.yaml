@@ -1,0 +1,57 @@
+# Contour HTTPProxy configuration for JSON-RPC workloads
+# Uses Contour's native HTTPProxy CRD with timeout support
+#
+# Architecture:
+#   - Contour + Envoy runs once in 'gateway' namespace
+#   - Each adi-stack creates an HTTPProxy in its own namespace
+#   - Contour watches all HTTPProxy resources cluster-wide
+#   - Single LoadBalancer serves all deployments
+#
+# Prerequisites:
+#   # Install Contour in gateway namespace
+#   helm repo add contour https://projectcontour.github.io/helm-charts
+#   helm repo update
+#   helm install contour contour/contour -n gateway --create-namespace \
+#     -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/contour-values-aws.yaml
+#
+# Usage:
+#   helm install adi-stack ./adi-stack -n adi-testnet --create-namespace \
+#     -f examples/values-testnet.yaml \
+#     -f examples/values-ingress-contour.yaml \
+#     --set ingress.hostname=testnet.example.com
+#
+# With TLS (cert-manager):
+#   helm install adi-stack ./adi-stack -n adi-testnet --create-namespace \
+#     -f examples/values-testnet.yaml \
+#     -f examples/values-ingress-contour.yaml \
+#     -f examples/values-tls-certmanager.yaml \
+#     --set ingress.hostname=testnet.example.com
+
+ingress:
+  enabled: true
+  type: gateway
+  # -- Set your hostname (REQUIRED)
+  hostname: ""
+
+  # TLS settings are inherited from values-tls-certmanager.yaml when using -t flag
+  # Do not override tls.enabled here to allow cert-manager integration
+
+  gateway:
+    # -- Contour Gateway class
+    className: "contour"
+    # -- Enable HTTPProxy for timeout configuration (recommended for JSON-RPC)
+    useHTTPProxy: true
+
+    # -- Timeout configuration optimized for blockchain JSON-RPC
+    timeouts:
+      # -- Response timeout: long enough for eth_call, eth_estimateGas
+      response: "30s"
+      # -- Idle timeout: 5 minutes for persistent HTTP connections
+      idle: "300s"
+      # -- Connection idle: keep TCP connections alive
+      idleConnection: "1h"
+
+    # -- Retry policy (disabled for JSON-RPC as calls are not idempotent)
+    retryPolicy:
+      count: 0
+      perTryTimeout: "10s"

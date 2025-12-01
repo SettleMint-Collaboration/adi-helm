@@ -1,0 +1,68 @@
+# Contour Helm Chart Values for Azure AKS
+# Official projectcontour Helm chart with HTTPProxy and external LoadBalancer
+#
+# Installs a single Contour/Envoy instance that handles routing for all namespaces.
+#
+# Prerequisites:
+#   helm repo add contour https://projectcontour.github.io/helm-charts
+#   helm repo update
+#
+# Install:
+#   helm install contour contour/contour \
+#     -n gateway --create-namespace \
+#     -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/contour-values-azure.yaml
+#
+# Verify:
+#   kubectl get crd httpproxies.projectcontour.io
+#   kubectl get pods -n gateway
+#
+# Get LoadBalancer IP:
+#   kubectl get svc -n gateway contour-envoy -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+
+# Contour controller settings
+contour:
+  ingressClass:
+    create: true
+    name: contour
+    default: false
+  # Resources for Contour controller
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# Envoy proxy settings
+envoy:
+  # Use Deployment for easier scaling (not DaemonSet)
+  kind: deployment
+  replicaCount: 2
+
+  # Resources for Envoy proxy
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+  # Shutdown manager resources
+  shutdownManager:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 16Mi
+      limits:
+        cpu: 50m
+        memory: 64Mi
+
+  # Service configuration for Azure
+  service:
+    type: LoadBalancer
+    externalTrafficPolicy: Local
+    # Azure LoadBalancer annotations
+    annotations:
+      service.beta.kubernetes.io/azure-load-balancer-internal: "false"

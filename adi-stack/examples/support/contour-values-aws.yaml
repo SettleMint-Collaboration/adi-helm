@@ -1,0 +1,76 @@
+# Contour Helm Chart Values for AWS EKS
+# Official projectcontour Helm chart with HTTPProxy and internet-facing NLB
+#
+# Installs a single Contour/Envoy instance that handles routing for all namespaces.
+# Each adi-stack deployment creates HTTPProxy resources that Contour routes through
+# the shared Envoy pods.
+#
+# Prerequisites:
+#   helm repo add contour https://projectcontour.github.io/helm-charts
+#   helm repo update
+#
+# Install:
+#   helm install contour contour/contour \
+#     -n gateway --create-namespace \
+#     -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/contour-values-aws.yaml
+#
+# Verify:
+#   kubectl get crd httpproxies.projectcontour.io
+#   kubectl get pods -n gateway
+#
+# Get LoadBalancer hostname:
+#   kubectl get svc -n gateway contour-envoy -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+
+# Contour controller settings
+contour:
+  ingressClass:
+    create: true
+    name: contour
+    default: false
+  # Resources for Contour controller
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# Envoy proxy settings
+envoy:
+  # Use Deployment for easier scaling (not DaemonSet)
+  kind: deployment
+  replicaCount: 2
+
+  # Resources for Envoy proxy
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+  # Shutdown manager resources
+  shutdownManager:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 16Mi
+      limits:
+        cpu: 50m
+        memory: 64Mi
+
+  # Service configuration for AWS
+  service:
+    type: LoadBalancer
+    externalTrafficPolicy: Local
+    # AWS NLB annotations for internet-facing LoadBalancer
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+      service.beta.kubernetes.io/aws-load-balancer-type: "external"
+      service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
+      service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+      service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold: "2"
+      service.beta.kubernetes.io/aws-load-balancer-healthcheck-unhealthy-threshold: "2"
+      service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: "10"

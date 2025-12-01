@@ -1,0 +1,38 @@
+# ClusterIssuer for cert-manager with Let's Encrypt
+# Works with Gateway API (Contour, Istio) across multiple namespaces
+#
+# Prerequisites:
+#   # Install cert-manager with Helm
+#   helm repo add jetstack https://charts.jetstack.io
+#   helm repo update
+#   helm install cert-manager jetstack/cert-manager \
+#     -n cert-manager --create-namespace \
+#     --set crds.enabled=true \
+#     --set extraArgs={--enable-gateway-api}
+#
+# Apply:
+#   # IMPORTANT: Edit the email address first!
+#   kubectl apply -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/cert-manager-clusterissuer.yaml
+#
+# For staging/testing (no rate limits, untrusted certs):
+#   Change server to: https://acme-staging-v02.api.letsencrypt.org/directory
+#   Change name to: letsencrypt-staging
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    # Let's Encrypt production server
+    server: https://acme-v02.api.letsencrypt.org/directory
+    # IMPORTANT: Replace with your email (example.com domains are rejected)
+    email: support@settlemint.com
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      # HTTP-01 solver for Contour
+      # Uses ingressClassName (not class annotation) for modern Kubernetes
+      - http01:
+          ingress:
+            ingressClassName: contour
