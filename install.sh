@@ -31,6 +31,7 @@ Options:
   -p, --performance <tier> Performance tier: low, medium, high (default: medium)
   -t, --cert-manager      Use cert-manager for TLS certificates
   -f, --values <file>     Additional values file to merge
+  -s, --set <key=value>   Set a Helm value (can be used multiple times)
   -d, --dry-run           Perform a dry run (template only)
   -u, --upgrade           Upgrade existing release instead of install
   -h, --help              Show this help message
@@ -56,6 +57,7 @@ Examples:
   $0 testnet -c gke -p medium          # GKE with medium-performance storage
   $0 mainnet -c azure -p high          # Azure with premium storage
   $0 testnet -c aws -t                 # AWS with cert-manager TLS
+  $0 testnet -s erigon.enabled=false -s l1Rpc.url=https://eth.example.com  # External L1 RPC
 
 EOF
     exit "${1:-0}"
@@ -82,6 +84,7 @@ CLOUD_PROVIDER=""
 PERFORMANCE_TIER="medium"
 CERT_MANAGER=false
 EXTRA_VALUES=""
+HELM_SETS=()
 DRY_RUN=false
 UPGRADE=false
 NETWORK=""
@@ -125,6 +128,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         -f|--values)
             EXTRA_VALUES="$2"
+            shift 2
+            ;;
+        -s|--set)
+            HELM_SETS+=("$2")
             shift 2
             ;;
         -d|--dry-run)
@@ -238,6 +245,12 @@ if [[ -n "$EXTRA_VALUES" ]]; then
     fi
     HELM_CMD+=("-f" "$EXTRA_VALUES")
 fi
+
+# Add --set arguments
+for set_arg in "${HELM_SETS[@]}"; do
+    HELM_CMD+=("--set" "$set_arg")
+    log_info "Set: $set_arg"
+done
 
 if [[ "$DRY_RUN" == false ]]; then
     HELM_CMD+=("--create-namespace")

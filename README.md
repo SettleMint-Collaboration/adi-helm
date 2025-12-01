@@ -86,6 +86,39 @@ helm install adi-stack adi-stack/adi-stack \
 helm install adi-stack adi-stack/adi-stack \
   -n adi-stack --create-namespace \
   -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-openshift-mainnet.yaml
+
+# Using external L1 RPC instead of built-in Erigon
+helm install adi-stack adi-stack/adi-stack \
+  -n adi-stack --create-namespace \
+  -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-testnet.yaml \
+  --set erigon.enabled=false \
+  --set l1Rpc.url=https://eth-sepolia.example.com
+```
+
+### Using the Install Script
+
+For local development or when cloning the repository, use the install script:
+
+```bash
+git clone https://github.com/settlemint/adi-helm.git
+cd adi-helm
+
+# Basic testnet deployment
+./install.sh testnet
+
+# Mainnet with cloud optimizations
+./install.sh mainnet --cloud aws --performance high
+
+# Using external L1 RPC (disable Erigon)
+./install.sh testnet \
+  -s erigon.enabled=false \
+  -s l1Rpc.url=https://eth-sepolia.example.com
+
+# Multiple --set flags can be combined
+./install.sh mainnet \
+  -s erigon.enabled=false \
+  -s l1Rpc.url=https://eth-mainnet.example.com \
+  -s genesis.chainId=36900
 ```
 
 ## Configuration
