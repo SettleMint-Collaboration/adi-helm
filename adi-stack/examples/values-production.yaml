@@ -9,9 +9,9 @@
 
 # Genesis configuration - REQUIRED
 genesis:
-  bridgehubAddress: "0xc1662F0478e0E93Dc6CC321281Eb180A21036Da6"
+  bridgehubAddress: "0x7a38c18a229ef8a0ae7104ba272a46280f2d59cb"
   chainId: "36900"
-  mainNodeRpcUrl: "https://rpc.ab.adifoundation.ai/"
+  mainNodeRpcUrl: "https://rpc.adifoundation.ai/"
 
 # Ingress - production with TLS
 # Cloud-specific settings (className, annotations) come from overlay files:

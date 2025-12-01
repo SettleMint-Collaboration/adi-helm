@@ -50,14 +50,17 @@ spec:
             - -c
             - |
               mkdir -p /chain/db/node1 /chain/db/shared /chain/db/node1/block_dumps
-              chmod -R 755 /chain
+              # Ensure directories are group-writable (fsGroup handles ownership)
+              chmod -R g+w /chain/db
           volumeMounts:
             - name: chain-data
               mountPath: /chain
           {{- if not .Values.openshift.enabled }}
           securityContext:
-            runAsUser: 0
-            runAsNonRoot: false
+            {{- toYaml .Values.externalNode.containerSecurityContext | nindent 12 }}
+          {{- else }}
+          securityContext:
+            {{- include "adi-stack.openshiftContainerSecurityContext" . | nindent 12 }}
           {{- end }}
         {{- if .Values.proofSync.enabled }}
         - name: init-proof-sync
@@ -86,11 +89,7 @@ spec:
             {{- toYaml .Values.proofSync.containerSecurityContext | nindent 12 }}
           {{- else }}
           securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-                - ALL
+            {{- include "adi-stack.openshiftContainerSecurityContext" . | nindent 12 }}
           {{- end }}
           volumeMounts:
             - name: chain-data
@@ -164,16 +163,17 @@ spec:
             {{- toYaml . | nindent 12 }}
             {{- end }}
           livenessProbe:
-            httpGet:
-              path: /health
+            tcpSocket:
               port: health
             initialDelaySeconds: {{ .Values.externalNode.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.externalNode.livenessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.externalNode.livenessProbe.timeoutSeconds }}
             failureThreshold: {{ .Values.externalNode.livenessProbe.failureThreshold }}
+          # NOTE: TCP probe used instead of HTTP because the /health endpoint may not
+          # respond reliably. Trade-off: TCP only verifies port is open, not full readiness.
+          # Use higher initialDelaySeconds if premature ready status causes issues.
           readinessProbe:
-            httpGet:
-              path: /health
+            tcpSocket:
               port: health
             initialDelaySeconds: {{ .Values.externalNode.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.externalNode.readinessProbe.periodSeconds }}
@@ -186,11 +186,7 @@ spec:
             {{- toYaml .Values.externalNode.containerSecurityContext | nindent 12 }}
           {{- else }}
           securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-                - ALL
+            {{- include "adi-stack.openshiftContainerSecurityContext" . | nindent 12 }}
           {{- end }}
           volumeMounts:
             - name: chain-data
@@ -225,11 +221,7 @@ spec:
             {{- toYaml .Values.proofSync.containerSecurityContext | nindent 12 }}
           {{- else }}
           securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-                - ALL
+            {{- include "adi-stack.openshiftContainerSecurityContext" . | nindent 12 }}
           {{- end }}
           volumeMounts:
             - name: chain-data

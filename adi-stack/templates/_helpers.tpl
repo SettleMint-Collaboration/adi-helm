@@ -218,6 +218,18 @@ checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha25
 {{- end }}
 
 {{/*
+OpenShift container security context
+Used for all containers when running on OpenShift
+*/}}
+{{- define "adi-stack.openshiftContainerSecurityContext" -}}
+allowPrivilegeEscalation: false
+runAsNonRoot: true
+capabilities:
+  drop:
+    - ALL
+{{- end -}}
+
+{{/*
 Image pull secrets (combining global and local)
 */}}
 {{- define "adi-stack.imagePullSecrets" -}}
