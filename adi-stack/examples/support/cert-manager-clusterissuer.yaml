@@ -31,11 +31,8 @@ spec:
     privateKeySecretRef:
       name: letsencrypt-prod-account-key
     solvers:
-      # Gateway API HTTP-01 solver
-      # Works across all namespaces (adi-mainnet, adi-testnet, etc.)
+      # HTTP-01 solver for Contour
+      # Uses ingressClassName (not class annotation) for modern Kubernetes
       - http01:
-          gatewayHTTPRoute:
-            parentRefs:
-              - name: adi-stack
-                kind: Gateway
-                # namespace omitted = matches any namespace
+          ingress:
+            ingressClassName: contour

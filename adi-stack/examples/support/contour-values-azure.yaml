@@ -25,13 +25,39 @@ contour:
     create: true
     name: contour
     default: false
+  # Resources for Contour controller
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
 
 # Envoy proxy settings
 envoy:
-  # Use Deployment for easier scaling
-  workload:
-    type: Deployment
-    replicas: 2
+  # Use Deployment for easier scaling (not DaemonSet)
+  kind: deployment
+  replicaCount: 2
+
+  # Resources for Envoy proxy
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+  # Shutdown manager resources
+  shutdownManager:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 16Mi
+      limits:
+        cpu: 50m
+        memory: 64Mi
 
   # Service configuration for Azure
   service:
@@ -40,7 +66,3 @@ envoy:
     # Azure LoadBalancer annotations
     annotations:
       service.beta.kubernetes.io/azure-load-balancer-internal: "false"
-
-# Gateway API configuration
-gatewayAPI:
-  enabled: true
