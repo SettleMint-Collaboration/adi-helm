@@ -11,6 +11,9 @@ metadata:
   labels:
     {{- include "adi-stack.labels" . | nindent 4 }}
 spec:
+  {{- if .Values.ingress.gateway.className }}
+  ingressClassName: {{ .Values.ingress.gateway.className }}
+  {{- end }}
   virtualhost:
     fqdn: {{ .Values.ingress.hostname | required "ingress.hostname is required when using HTTPProxy" }}
     {{- if .Values.ingress.tls.enabled }}
