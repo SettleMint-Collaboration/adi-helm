@@ -316,6 +316,7 @@ externalNode:
         - ALL
 
   # -- Liveness probe configuration
+  # Probes check the RPC port (3050) to verify the node is accepting connections
   livenessProbe:
     # -- Initial delay before probe starts
     initialDelaySeconds: 60
@@ -327,6 +328,7 @@ externalNode:
     failureThreshold: 5
 
   # -- Readiness probe configuration
+  # Probes check the RPC port (3050) to verify the node is accepting connections
   readinessProbe:
     # -- Initial delay before probe starts
     initialDelaySeconds: 30

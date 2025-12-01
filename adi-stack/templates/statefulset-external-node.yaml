@@ -164,17 +164,16 @@ spec:
             {{- end }}
           livenessProbe:
             tcpSocket:
-              port: health
+              port: rpc
             initialDelaySeconds: {{ .Values.externalNode.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.externalNode.livenessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.externalNode.livenessProbe.timeoutSeconds }}
             failureThreshold: {{ .Values.externalNode.livenessProbe.failureThreshold }}
-          # NOTE: TCP probe used instead of HTTP because the /health endpoint may not
-          # respond reliably. Trade-off: TCP only verifies port is open, not full readiness.
+          # NOTE: TCP probe checks RPC port (3050) to verify the node is accepting connections.
           # Use higher initialDelaySeconds if premature ready status causes issues.
           readinessProbe:
             tcpSocket:
-              port: health
+              port: rpc
             initialDelaySeconds: {{ .Values.externalNode.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.externalNode.readinessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.externalNode.readinessProbe.timeoutSeconds }}
