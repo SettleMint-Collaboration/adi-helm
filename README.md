@@ -158,6 +158,8 @@ Contour with Gateway API provides timeout configuration essential for blockchain
 
 **Step 1: Install Contour with Helm**
 
+Contour is installed once in a shared `gateway` namespace and handles routing for all adi-stack deployments.
+
 ```bash
 # Add the official Contour Helm repository
 helm repo add projectcontour https://projectcontour.io/charts
@@ -165,45 +167,70 @@ helm repo update
 
 # For AWS EKS (internet-facing NLB)
 helm install contour projectcontour/contour \
-  -n projectcontour --create-namespace \
+  -n gateway --create-namespace \
   -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/contour-values-aws.yaml
 
 # For Google GKE
 helm install contour projectcontour/contour \
-  -n projectcontour --create-namespace \
+  -n gateway --create-namespace \
   -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/contour-values-gke.yaml
 
 # For Azure AKS
 helm install contour projectcontour/contour \
-  -n projectcontour --create-namespace \
+  -n gateway --create-namespace \
   -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/contour-values-azure.yaml
-
-# Verify installation
-kubectl get gatewayclass contour
-kubectl get pods -n projectcontour
 ```
 
-**Step 2: Deploy adi-stack**
+**Step 2: Create shared Gateway**
 
 ```bash
+# Create GatewayClass and shared Gateway (accepts routes from all namespaces)
+kubectl apply -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/gateway-shared.yaml
+
+# Verify
+kubectl get gatewayclass contour
+kubectl get gateway -n gateway
+kubectl get pods -n gateway
+```
+
+**Step 3: Deploy adi-stack**
+
+Deploy testnet and/or mainnet - both use the shared Contour/Envoy instance:
+
+```bash
+# Testnet
 helm install adi-stack adi-stack/adi-stack \
-  -n adi-stack --create-namespace \
+  -n adi-testnet --create-namespace \
   -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-testnet.yaml \
   -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-ingress-contour.yaml \
-  --set ingress.hostname=rpc.example.com
+  --set ingress.hostname=testnet.example.com \
+  --set ingress.gateway.gatewayName=adi-gateway \
+  --set ingress.gateway.gatewayNamespace=gateway
+
+# Mainnet
+helm install adi-stack adi-stack/adi-stack \
+  -n adi-mainnet --create-namespace \
+  -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-production.yaml \
+  -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-ingress-contour.yaml \
+  --set ingress.hostname=mainnet.example.com \
+  --set ingress.gateway.gatewayName=adi-gateway \
+  --set ingress.gateway.gatewayNamespace=gateway
 ```
 
-**Step 3: Configure DNS**
+**Step 4: Configure DNS**
 
-Point your domain to the LoadBalancer:
+Point your domains to the shared LoadBalancer:
 
 ```bash
-# Get the LoadBalancer hostname
-kubectl get svc -n projectcontour envoy \
+# Get the LoadBalancer hostname/IP
+kubectl get svc -n gateway envoy \
   -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
 ```
 
-Create a CNAME record: `rpc.example.com -> <loadbalancer-hostname>`
+Create CNAME records:
+
+- `testnet.example.com -> <loadbalancer-hostname>`
+- `mainnet.example.com -> <loadbalancer-hostname>`
 
 ### Other Ingress Options
 
@@ -290,11 +317,12 @@ l1Rpc:
 
 **Contour ingress controller (install before adi-stack):**
 
-| File                                         | Description                           |
-| -------------------------------------------- | ------------------------------------- |
-| `examples/support/contour-values-aws.yaml`   | Contour for AWS EKS (internet-facing) |
-| `examples/support/contour-values-gke.yaml`   | Contour for Google GKE                |
-| `examples/support/contour-values-azure.yaml` | Contour for Azure AKS                 |
+| File                                         | Description                              |
+| -------------------------------------------- | ---------------------------------------- |
+| `examples/support/contour-values-aws.yaml`   | Contour for AWS EKS (internet-facing)    |
+| `examples/support/contour-values-gke.yaml`   | Contour for Google GKE                   |
+| `examples/support/contour-values-azure.yaml` | Contour for Azure AKS                    |
+| `examples/support/gateway-shared.yaml`       | Shared Gateway for multi-namespace setup |
 
 **Optional add-ons:**
 

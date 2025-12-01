@@ -12,6 +12,9 @@ spec:
   parentRefs:
     {{- if .Values.ingress.gateway.gatewayName }}
     - name: {{ .Values.ingress.gateway.gatewayName }}
+      {{- if .Values.ingress.gateway.gatewayNamespace }}
+      namespace: {{ .Values.ingress.gateway.gatewayNamespace }}
+      {{- end }}
       {{- if .Values.ingress.gateway.sectionName }}
       sectionName: {{ .Values.ingress.gateway.sectionName }}
       {{- end }}

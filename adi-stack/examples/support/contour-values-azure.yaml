@@ -1,23 +1,27 @@
 # Contour Helm Chart Values for Azure AKS
 # Official projectcontour Helm chart with Gateway API and external LoadBalancer
 #
+# Installs a single Contour/Envoy instance that handles routing for all namespaces.
+#
 # Prerequisites:
-#   # Add the official Contour Helm repository
 #   helm repo add projectcontour https://projectcontour.io/charts
 #   helm repo update
 #
 # Install:
 #   helm install contour projectcontour/contour \
-#     -n projectcontour --create-namespace \
+#     -n gateway --create-namespace \
 #     -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/contour-values-azure.yaml
+#
+# Create shared Gateway (after Contour install):
+#   kubectl apply -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/gateway-shared.yaml
 #
 # Verify:
 #   kubectl get gatewayclass contour
-#   kubectl get pods -n projectcontour
-#   kubectl get svc -n projectcontour envoy
+#   kubectl get gateway -n gateway
+#   kubectl get pods -n gateway
 #
 # Get LoadBalancer IP:
-#   kubectl get svc -n projectcontour envoy -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+#   kubectl get svc -n gateway envoy -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
 
 # Contour controller settings
 contour:
@@ -39,16 +43,8 @@ envoy:
     externalTrafficPolicy: Local
     # Azure LoadBalancer annotations
     annotations:
-      # Public LoadBalancer (default, but explicit for clarity)
       service.beta.kubernetes.io/azure-load-balancer-internal: "false"
-      # Optional: specify resource group for public IP
-      # service.beta.kubernetes.io/azure-load-balancer-resource-group: "my-rg"
 
 # Gateway API configuration
 gatewayAPI:
   enabled: true
-
-# GatewayClass for adi-stack Gateway resources
-gatewayClass:
-  create: true
-  name: contour

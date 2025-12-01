@@ -620,7 +620,11 @@ ingress:
     # -- Gateway class name (e.g., "contour", "istio", "cilium")
     className: ""
     # -- Attach to existing Gateway by name (skips Gateway creation)
+    # Use with gatewayNamespace for shared Gateway across namespaces
     gatewayName: ""
+    # -- Namespace of existing Gateway (for shared Gateway setup)
+    # When set, HTTPRoutes will reference Gateway in this namespace
+    gatewayNamespace: ""
     # -- Gateway listener section name
     sectionName: ""
     # -- Create HTTPProxy for advanced routing (Contour only)

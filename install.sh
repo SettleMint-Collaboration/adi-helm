@@ -236,21 +236,21 @@ case "$INGRESS_CONTROLLER" in
             log_warn "Gateway API CRDs not found. Install Contour with Helm first:"
             log_warn "  helm repo add projectcontour https://projectcontour.io/charts"
             log_warn "  helm repo update"
-            log_warn "  # For AWS EKS:"
-            log_warn "  helm install contour projectcontour/contour -n projectcontour --create-namespace \\"
+            log_warn "  helm install contour projectcontour/contour -n gateway --create-namespace \\"
             log_warn "    -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/contour-values-aws.yaml"
-            log_warn "  # For GKE/AKS/other:"
-            log_warn "  helm install contour projectcontour/contour -n projectcontour --create-namespace \\"
-            log_warn "    --set gatewayClass.create=true --set gatewayClass.name=contour --set gatewayAPI.enabled=true"
+            log_warn "  kubectl apply -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/gateway-shared.yaml"
             log_error "Gateway API CRDs are required for Contour ingress"
         fi
-        # Check for GatewayClass
-        if ! kubectl get gatewayclass contour &>/dev/null; then
-            log_warn "GatewayClass 'contour' not found. Install Contour with the instructions above."
-            log_error "GatewayClass 'contour' is required"
+        # Check for shared Gateway
+        if ! kubectl get gateway adi-gateway -n gateway &>/dev/null; then
+            log_warn "Shared Gateway 'adi-gateway' not found in 'gateway' namespace. Create it with:"
+            log_warn "  kubectl apply -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/gateway-shared.yaml"
+            log_error "Shared Gateway is required for Contour ingress"
         fi
         HELM_SETS+=("ingress.type=gateway")
         HELM_SETS+=("ingress.gateway.className=contour")
+        HELM_SETS+=("ingress.gateway.gatewayName=adi-gateway")
+        HELM_SETS+=("ingress.gateway.gatewayNamespace=gateway")
         log_info "Ingress: Contour with Gateway API"
         ;;
     nginx)
