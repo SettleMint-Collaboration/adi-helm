@@ -30,6 +30,7 @@ Options:
   -c, --cloud <provider>  Cloud provider: aws, gke, azure (optional)
   -p, --performance <tier> Performance tier: low, medium, high (default: medium)
   -t, --cert-manager      Use cert-manager for TLS certificates
+  -i, --ingress <type>    Ingress controller: auto, contour, nginx, none (default: auto)
   -f, --values <file>     Additional values file to merge
   -s, --set <key=value>   Set a Helm value (can be used multiple times)
   -d, --dry-run           Perform a dry run (template only)
@@ -57,6 +58,8 @@ Examples:
   $0 testnet -c gke -p medium          # GKE with medium-performance storage
   $0 mainnet -c azure -p high          # Azure with premium storage
   $0 testnet -c aws -t                 # AWS with cert-manager TLS
+  $0 testnet -i contour                # Contour ingress with Gateway API
+  $0 testnet -i none                   # Disable ingress (LoadBalancer only)
   $0 testnet -s erigon.enabled=false -s l1Rpc.url=https://eth.example.com  # External L1 RPC
 
 EOF
@@ -83,6 +86,7 @@ OPENSHIFT=false
 CLOUD_PROVIDER=""
 PERFORMANCE_TIER="medium"
 CERT_MANAGER=false
+INGRESS_CONTROLLER="auto"
 EXTRA_VALUES=""
 HELM_SETS=()
 DRY_RUN=false
@@ -125,6 +129,13 @@ while [[ $# -gt 0 ]]; do
         -t|--cert-manager)
             CERT_MANAGER=true
             shift
+            ;;
+        -i|--ingress)
+            INGRESS_CONTROLLER="$2"
+            if [[ ! "$INGRESS_CONTROLLER" =~ ^(auto|contour|nginx|none)$ ]]; then
+                log_error "Invalid ingress controller: $INGRESS_CONTROLLER (must be auto, contour, nginx, or none)"
+            fi
+            shift 2
             ;;
         -f|--values)
             EXTRA_VALUES="$2"
@@ -216,6 +227,46 @@ if [[ "$CERT_MANAGER" == true ]]; then
         log_error "cert-manager values file not found: $CERTMGR_VALUES"
     fi
 fi
+
+# Add ingress controller configuration
+case "$INGRESS_CONTROLLER" in
+    contour)
+        # Check for Gateway API CRDs
+        if ! kubectl get crd gateways.gateway.networking.k8s.io &>/dev/null; then
+            log_warn "Gateway API CRDs not found. Install Contour with Helm first:"
+            log_warn "  helm repo add projectcontour https://projectcontour.io/charts"
+            log_warn "  helm repo update"
+            log_warn "  # For AWS EKS:"
+            log_warn "  helm install contour projectcontour/contour -n projectcontour --create-namespace \\"
+            log_warn "    -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/contour-values-aws.yaml"
+            log_warn "  # For GKE/AKS/other:"
+            log_warn "  helm install contour projectcontour/contour -n projectcontour --create-namespace \\"
+            log_warn "    --set gatewayClass.create=true --set gatewayClass.name=contour --set gatewayAPI.enabled=true"
+            log_error "Gateway API CRDs are required for Contour ingress"
+        fi
+        # Check for GatewayClass
+        if ! kubectl get gatewayclass contour &>/dev/null; then
+            log_warn "GatewayClass 'contour' not found. Install Contour with the instructions above."
+            log_error "GatewayClass 'contour' is required"
+        fi
+        HELM_SETS+=("ingress.type=gateway")
+        HELM_SETS+=("ingress.gateway.className=contour")
+        log_info "Ingress: Contour with Gateway API"
+        ;;
+    nginx)
+        log_warn "NGINX Ingress is end-of-life (March 2026). Consider migrating to Contour."
+        HELM_SETS+=("ingress.type=ingress")
+        HELM_SETS+=("ingress.kubernetes.className=nginx")
+        log_info "Ingress: NGINX (deprecated)"
+        ;;
+    none)
+        HELM_SETS+=("ingress.enabled=false")
+        log_info "Ingress: Disabled"
+        ;;
+    auto|"")
+        log_info "Ingress: Auto-detection enabled"
+        ;;
+esac
 
 # Build helm command using array (no eval for security)
 HELM_CMD=("helm")

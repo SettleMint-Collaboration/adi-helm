@@ -1,0 +1,53 @@
+# Contour Helm Chart Values for Google GKE
+# Official projectcontour Helm chart with Gateway API and external LoadBalancer
+#
+# Prerequisites:
+#   # Add the official Contour Helm repository
+#   helm repo add projectcontour https://projectcontour.io/charts
+#   helm repo update
+#
+# Install:
+#   helm install contour projectcontour/contour \
+#     -n projectcontour --create-namespace \
+#     -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/contour-values-gke.yaml
+#
+# Verify:
+#   kubectl get gatewayclass contour
+#   kubectl get pods -n projectcontour
+#   kubectl get svc -n projectcontour envoy
+#
+# Get LoadBalancer IP:
+#   kubectl get svc -n projectcontour envoy -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+
+# Contour controller settings
+contour:
+  ingressClass:
+    create: true
+    name: contour
+    default: false
+
+# Envoy proxy settings
+envoy:
+  # Use Deployment for easier scaling
+  workload:
+    type: Deployment
+    replicas: 2
+
+  # Service configuration for GKE
+  service:
+    type: LoadBalancer
+    externalTrafficPolicy: Local
+    # GKE LoadBalancer annotations (optional)
+    annotations:
+      # Use Regional External HTTP(S) Load Balancer if needed
+      # networking.gke.io/load-balancer-type: "External"
+      {}
+
+# Gateway API configuration
+gatewayAPI:
+  enabled: true
+
+# GatewayClass for adi-stack Gateway resources
+gatewayClass:
+  create: true
+  name: contour

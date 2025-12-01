@@ -368,7 +368,7 @@ cloudflared:
     pullPolicy: IfNotPresent
 
   # -- Replay endpoint hostname
-  replayHostname: "replay.ab.testnet.adifoundation.ai"
+  replayHostname: "replay.adifoundation.ai"
 
   # -- Listener port
   listenerPort: 3053
@@ -617,12 +617,48 @@ ingress:
 
   # -- Gateway API specific
   gateway:
-    # -- Gateway class name
+    # -- Gateway class name (e.g., "contour", "istio", "cilium")
     className: ""
-    # -- Gateway name to attach to
+    # -- Attach to existing Gateway by name (skips Gateway creation)
     gatewayName: ""
     # -- Gateway listener section name
     sectionName: ""
+    # -- Create HTTPProxy for advanced routing (Contour only)
+    # Enables timeout configuration for JSON-RPC workloads
+    useHTTPProxy: false
+    # -- Timeout configuration (requires useHTTPProxy: true for Contour)
+    timeouts:
+      # -- Response timeout (time from request end to response end)
+      # Recommended: 30s for JSON-RPC (eth_call, eth_estimateGas can be slow)
+      response: "30s"
+      # -- Idle timeout (inactivity during request/response)
+      # Recommended: 300s (5 minutes) for persistent connections
+      idle: "300s"
+      # -- Connection idle timeout (keep connection open when idle)
+      idleConnection: "1h"
+    # -- Retry policy for failed requests (Contour HTTPProxy only)
+    retryPolicy:
+      # -- Number of retries (0 to disable, recommended for JSON-RPC)
+      count: 0
+      # -- Timeout per retry attempt
+      perTryTimeout: "10s"
+
+  # -- cert-manager integration for automatic TLS certificates
+  # Works with both Ingress (via annotations) and Gateway API (via Certificate resource)
+  certManager:
+    # -- Enable cert-manager Certificate resource for Gateway API
+    # For Ingress, use kubernetes.annotations with cert-manager.io/cluster-issuer instead
+    enabled: false
+    # -- Certificate issuer reference
+    issuerRef:
+      # -- Name of the ClusterIssuer or Issuer
+      name: "letsencrypt-prod"
+      # -- Kind: ClusterIssuer or Issuer
+      kind: "ClusterIssuer"
+    # -- Certificate duration (default: 2160h = 90 days)
+    # duration: "2160h"
+    # -- Renew before expiry (default: 360h = 15 days)
+    # renewBefore: "360h"
 
   # -- OpenShift Route specific
   route:

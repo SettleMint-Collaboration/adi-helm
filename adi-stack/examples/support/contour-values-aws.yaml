@@ -1,0 +1,58 @@
+# Contour Helm Chart Values for AWS EKS
+# Official projectcontour Helm chart with Gateway API and internet-facing NLB
+#
+# Prerequisites:
+#   # Add the official Contour Helm repository
+#   helm repo add projectcontour https://projectcontour.io/charts
+#   helm repo update
+#
+# Install:
+#   helm install contour projectcontour/contour \
+#     -n projectcontour --create-namespace \
+#     -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/contour-values-aws.yaml
+#
+# Verify:
+#   kubectl get gatewayclass contour
+#   kubectl get pods -n projectcontour
+#   kubectl get svc -n projectcontour envoy
+#
+# Get LoadBalancer hostname:
+#   kubectl get svc -n projectcontour envoy -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+
+# Contour controller settings
+contour:
+  ingressClass:
+    create: true
+    name: contour
+    default: false
+
+# Envoy proxy settings
+envoy:
+  # Use Deployment for easier scaling
+  workload:
+    type: Deployment
+    replicas: 2
+
+  # Service configuration for AWS
+  service:
+    type: LoadBalancer
+    externalTrafficPolicy: Local
+    # AWS NLB annotations for internet-facing LoadBalancer
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+      service.beta.kubernetes.io/aws-load-balancer-type: "external"
+      service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
+      service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+      service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold: "2"
+      service.beta.kubernetes.io/aws-load-balancer-healthcheck-unhealthy-threshold: "2"
+      service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: "10"
+
+# Gateway API configuration
+gatewayAPI:
+  # Let Contour manage Gateway API CRDs
+  enabled: true
+
+# GatewayClass for adi-stack Gateway resources
+gatewayClass:
+  create: true
+  name: contour

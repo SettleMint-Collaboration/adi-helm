@@ -14,7 +14,8 @@ genesis:
   mainNodeRpcUrl: "https://rpc.adifoundation.ai/"
 
 # Ingress - production with TLS
-# Cloud-specific settings (className, annotations) come from overlay files:
+# Ingress controller overlays (pick one):
+#   -f values-ingress-contour.yaml (Gateway API - recommended)
 #   -f values-cloud-aws.yaml (ALB)
 #   -f values-cloud-gke.yaml (GCE)
 #   -f values-cloud-azure.yaml (App Gateway)

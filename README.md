@@ -65,34 +65,46 @@ helm repo update
 Install with Helm using layered values files:
 
 ```bash
-# Testnet deployment
+# Testnet deployment (Sepolia L1)
 helm install adi-stack adi-stack/adi-stack \
-  -n adi-stack --create-namespace \
+  -n adi-testnet --create-namespace \
   -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-testnet.yaml
+
+# Mainnet deployment (Ethereum L1)
+helm install adi-stack adi-stack/adi-stack \
+  -n adi-mainnet --create-namespace \
+  -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-production.yaml
 
 # Mainnet on AWS with high performance
 helm install adi-stack adi-stack/adi-stack \
-  -n adi-stack --create-namespace \
+  -n adi-mainnet --create-namespace \
   -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-production.yaml \
   -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-cloud-aws.yaml \
   -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-performance-high.yaml
 
 # OpenShift testnet
 helm install adi-stack adi-stack/adi-stack \
-  -n adi-stack --create-namespace \
+  -n adi-testnet --create-namespace \
   -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-openshift-testnet.yaml
 
 # OpenShift mainnet
 helm install adi-stack adi-stack/adi-stack \
-  -n adi-stack --create-namespace \
+  -n adi-mainnet --create-namespace \
   -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-openshift-mainnet.yaml
 
-# Using external L1 RPC instead of built-in Erigon
+# Testnet with external L1 RPC (instead of built-in Erigon)
 helm install adi-stack adi-stack/adi-stack \
-  -n adi-stack --create-namespace \
+  -n adi-testnet --create-namespace \
   -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-testnet.yaml \
   --set erigon.enabled=false \
   --set l1Rpc.url=https://eth-sepolia.example.com
+
+# Mainnet with external L1 RPC (instead of built-in Erigon)
+helm install adi-stack adi-stack/adi-stack \
+  -n adi-mainnet --create-namespace \
+  -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-production.yaml \
+  --set erigon.enabled=false \
+  --set l1Rpc.url=https://eth-mainnet.example.com
 ```
 
 ### Using the Install Script
@@ -103,23 +115,107 @@ For local development or when cloning the repository, use the install script:
 git clone https://github.com/settlemint/adi-helm.git
 cd adi-helm
 
-# Basic testnet deployment
-./install.sh testnet
-
-# Mainnet with cloud optimizations
-./install.sh mainnet --cloud aws --performance high
-
-# Using external L1 RPC (disable Erigon)
+# Testnet on AWS with TLS and external L1 RPC
 ./install.sh testnet \
+  -n adi-testnet \
+  -c aws \
+  -p low \
+  -i contour \
+  -t \
+  -u \
   -s erigon.enabled=false \
   -s l1Rpc.url=https://eth-sepolia.example.com
 
-# Multiple --set flags can be combined
+# Mainnet on AWS with TLS and external L1 RPC
 ./install.sh mainnet \
+  -n adi-mainnet \
+  -c aws \
+  -p low \
+  -i contour \
+  -t \
+  -u \
   -s erigon.enabled=false \
-  -s l1Rpc.url=https://eth-mainnet.example.com \
-  -s genesis.chainId=36900
+  -s l1Rpc.url=https://eth-mainnet.example.com
 ```
+
+**Script options:**
+
+| Flag | Long Form       | Description                               |
+| ---- | --------------- | ----------------------------------------- |
+| `-n` | `--namespace`   | Kubernetes namespace                      |
+| `-c` | `--cloud`       | Cloud provider (aws, gke, azure)          |
+| `-p` | `--performance` | Performance tier (low, medium, high)      |
+| `-i` | `--ingress`     | Ingress controller (contour, nginx, none) |
+| `-t` | `--tls`         | Enable TLS with cert-manager              |
+| `-u` | `--upgrade`     | Upgrade existing release                  |
+| `-s` | `--set`         | Set Helm values (can be repeated)         |
+
+## Ingress Controller Setup
+
+### Contour with Gateway API (Recommended)
+
+Contour with Gateway API provides timeout configuration essential for blockchain JSON-RPC workloads.
+
+**Step 1: Install Contour with Helm**
+
+```bash
+# Add the official Contour Helm repository
+helm repo add projectcontour https://projectcontour.io/charts
+helm repo update
+
+# For AWS EKS (internet-facing NLB)
+helm install contour projectcontour/contour \
+  -n projectcontour --create-namespace \
+  -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/contour-values-aws.yaml
+
+# For Google GKE
+helm install contour projectcontour/contour \
+  -n projectcontour --create-namespace \
+  -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/contour-values-gke.yaml
+
+# For Azure AKS
+helm install contour projectcontour/contour \
+  -n projectcontour --create-namespace \
+  -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/contour-values-azure.yaml
+
+# Verify installation
+kubectl get gatewayclass contour
+kubectl get pods -n projectcontour
+```
+
+**Step 2: Deploy adi-stack**
+
+```bash
+helm install adi-stack adi-stack/adi-stack \
+  -n adi-stack --create-namespace \
+  -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-testnet.yaml \
+  -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-ingress-contour.yaml \
+  --set ingress.hostname=rpc.example.com
+```
+
+**Step 3: Configure DNS**
+
+Point your domain to the LoadBalancer:
+
+```bash
+# Get the LoadBalancer hostname
+kubectl get svc -n projectcontour envoy \
+  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+```
+
+Create a CNAME record: `rpc.example.com -> <loadbalancer-hostname>`
+
+### Other Ingress Options
+
+```bash
+# Disable ingress (use port-forward or LoadBalancer service directly)
+./install.sh testnet -i none
+
+# NGINX Ingress (deprecated, EOL March 2026)
+./install.sh testnet -i nginx
+```
+
+> **Note**: NGINX Ingress Controller is [end-of-life](https://kubernetes.io/blog/2025/11/11/ingress-nginx-retirement/). We recommend Contour with Gateway API.
 
 ## Configuration
 
@@ -192,11 +288,64 @@ l1Rpc:
 | `examples/values-performance-medium.yaml` | Testnet nodes (16K IOPS)       |
 | `examples/values-performance-high.yaml`   | Production mainnet (64K+ IOPS) |
 
+**Contour ingress controller (install before adi-stack):**
+
+| File                                         | Description                           |
+| -------------------------------------------- | ------------------------------------- |
+| `examples/support/contour-values-aws.yaml`   | Contour for AWS EKS (internet-facing) |
+| `examples/support/contour-values-gke.yaml`   | Contour for Google GKE                |
+| `examples/support/contour-values-azure.yaml` | Contour for Azure AKS                 |
+
 **Optional add-ons:**
 
-| File                                   | Description                           |
-| -------------------------------------- | ------------------------------------- |
-| `examples/values-tls-certmanager.yaml` | TLS with cert-manager (Let's Encrypt) |
+| File                                               | Description                                     |
+| -------------------------------------------------- | ----------------------------------------------- |
+| `examples/values-ingress-contour.yaml`             | Contour Gateway API (recommended for JSON-RPC)  |
+| `examples/values-tls-certmanager.yaml`             | TLS with cert-manager (Ingress and Gateway API) |
+| `examples/support/cert-manager-clusterissuer.yaml` | ClusterIssuer for Let's Encrypt                 |
+
+### TLS with cert-manager
+
+For automatic TLS certificates with Let's Encrypt and Gateway API:
+
+**Step 1: Install and configure cert-manager**
+
+```bash
+# Install cert-manager
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.17.1/cert-manager.yaml
+
+# Wait for cert-manager to be ready
+kubectl wait --for=condition=Available deployment/cert-manager -n cert-manager --timeout=120s
+
+# Enable Gateway API support
+kubectl patch deployment cert-manager -n cert-manager \
+  --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--enable-gateway-api"}]'
+
+# Create ClusterIssuer (IMPORTANT: edit email address first!)
+kubectl apply -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/cert-manager-clusterissuer.yaml
+```
+
+**Step 2: Deploy with TLS**
+
+```bash
+helm install adi-stack adi-stack/adi-stack \
+  -n adi-stack --create-namespace \
+  -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-testnet.yaml \
+  -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-ingress-contour.yaml \
+  -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-tls-certmanager.yaml \
+  --set ingress.hostname=rpc.example.com
+```
+
+**Step 3: Configure DNS and verify**
+
+```bash
+# Get LoadBalancer hostname and create CNAME record
+kubectl get svc -n projectcontour envoy \
+  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+
+# Check certificate status (should show READY: True after DNS propagates)
+kubectl get certificate -n adi-stack
+```
 
 ## Monitoring
 

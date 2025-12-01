@@ -1,0 +1,67 @@
+# Contour Gateway API configuration for JSON-RPC workloads
+# Layer this with base config for Gateway API ingress with timeout support
+#
+# Prerequisites:
+#   # 1. Install Contour with official Helm chart
+#   helm repo add projectcontour https://projectcontour.io/charts
+#   helm repo update
+#
+#   # For AWS EKS (internet-facing NLB pre-configured):
+#   helm install contour projectcontour/contour \
+#     -n projectcontour --create-namespace \
+#     -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/contour-values-aws.yaml
+#
+#   # For GKE/AKS/other:
+#   helm install contour projectcontour/contour \
+#     -n projectcontour --create-namespace \
+#     --set gatewayClass.create=true \
+#     --set gatewayClass.name=contour \
+#     --set gatewayAPI.enabled=true
+#
+#   # 2. Verify installation
+#   kubectl get gatewayclass contour
+#   kubectl get pods -n projectcontour
+#
+# Usage:
+#   helm install adi-stack ./adi-stack -n adi-stack --create-namespace \
+#     -f examples/values-testnet.yaml \
+#     -f examples/values-ingress-contour.yaml \
+#     --set ingress.hostname=rpc.example.com
+#
+# With TLS (cert-manager):
+#   helm install adi-stack ./adi-stack -n adi-stack --create-namespace \
+#     -f examples/values-testnet.yaml \
+#     -f examples/values-ingress-contour.yaml \
+#     -f examples/values-tls-certmanager.yaml \
+#     --set ingress.hostname=rpc.example.com
+
+ingress:
+  enabled: true
+  type: gateway
+  # -- Set your hostname (REQUIRED)
+  hostname: ""
+
+  tls:
+    enabled: false
+    # -- Leave empty for cert-manager auto-creation, or specify existing secret
+    secretName: ""
+
+  gateway:
+    # -- Contour Gateway class
+    className: "contour"
+    # -- Enable HTTPProxy for timeout configuration (recommended for JSON-RPC)
+    useHTTPProxy: true
+
+    # -- Timeout configuration optimized for blockchain JSON-RPC
+    timeouts:
+      # -- Response timeout: long enough for eth_call, eth_estimateGas
+      response: "30s"
+      # -- Idle timeout: 5 minutes for persistent HTTP connections
+      idle: "300s"
+      # -- Connection idle: keep TCP connections alive
+      idleConnection: "1h"
+
+    # -- Retry policy (disabled for JSON-RPC as calls are not idempotent)
+    retryPolicy:
+      count: 0
+      perTryTimeout: "10s"

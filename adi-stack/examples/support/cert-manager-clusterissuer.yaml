@@ -1,0 +1,40 @@
+# ClusterIssuer for cert-manager with Let's Encrypt
+# Works with Gateway API (Contour, Istio) across multiple namespaces
+#
+# Prerequisites:
+#   # Install cert-manager
+#   kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.17.1/cert-manager.yaml
+#
+#   # Enable Gateway API support in cert-manager
+#   kubectl patch deployment cert-manager -n cert-manager \
+#     --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--enable-gateway-api"}]'
+#
+# Apply:
+#   # IMPORTANT: Edit the email address first!
+#   kubectl apply -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/cert-manager-clusterissuer.yaml
+#
+# For staging/testing (no rate limits, untrusted certs):
+#   Change server to: https://acme-staging-v02.api.letsencrypt.org/directory
+#   Change name to: letsencrypt-staging
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    # Let's Encrypt production server
+    server: https://acme-v02.api.letsencrypt.org/directory
+    # IMPORTANT: Replace with your email (example.com domains are rejected)
+    email: your-email@your-domain.com
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      # Gateway API HTTP-01 solver
+      # Works across all namespaces (adi-mainnet, adi-testnet, etc.)
+      - http01:
+          gatewayHTTPRoute:
+            parentRefs:
+              - name: adi-stack
+                kind: Gateway
+                # namespace omitted = matches any namespace

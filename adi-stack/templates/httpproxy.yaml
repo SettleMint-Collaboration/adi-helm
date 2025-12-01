@@ -1,0 +1,40 @@
+{{- if and .Values.ingress.enabled .Values.ingress.gateway.useHTTPProxy }}
+{{- $ingressType := include "adi-stack.ingressType" . }}
+{{- if eq $ingressType "gateway" }}
+# Contour HTTPProxy for advanced routing with timeout configuration
+# This is used instead of HTTPRoute when useHTTPProxy is enabled
+apiVersion: projectcontour.io/v1
+kind: HTTPProxy
+metadata:
+  name: {{ include "adi-stack.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adi-stack.labels" . | nindent 4 }}
+spec:
+  virtualhost:
+    fqdn: {{ .Values.ingress.hostname | required "ingress.hostname is required when using HTTPProxy" }}
+    {{- if .Values.ingress.tls.enabled }}
+    tls:
+      {{- if .Values.ingress.tls.secretName }}
+      secretName: {{ .Values.ingress.tls.secretName }}
+      {{- else }}
+      secretName: {{ include "adi-stack.fullname" . }}-tls
+      {{- end }}
+    {{- end }}
+  routes:
+    - conditions:
+        - prefix: {{ .Values.ingress.path | default "/" }}
+      timeoutPolicy:
+        response: {{ .Values.ingress.gateway.timeouts.response | default "30s" }}
+        idle: {{ .Values.ingress.gateway.timeouts.idle | default "300s" }}
+        idleConnection: {{ .Values.ingress.gateway.timeouts.idleConnection | default "1h" }}
+      {{- if gt (int .Values.ingress.gateway.retryPolicy.count) 0 }}
+      retryPolicy:
+        count: {{ .Values.ingress.gateway.retryPolicy.count }}
+        perTryTimeout: {{ .Values.ingress.gateway.retryPolicy.perTryTimeout | default "10s" }}
+      {{- end }}
+      services:
+        - name: {{ include "adi-stack.fullname" . }}
+          port: {{ .Values.service.ports.rpc }}
+{{- end }}
+{{- end }}

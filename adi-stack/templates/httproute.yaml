@@ -1,4 +1,7 @@
-{{- if and .Values.ingress.enabled (eq (include "adi-stack.ingressType" .) "gateway") }}
+{{- if and .Values.ingress.enabled (eq (include "adi-stack.ingressType" .) "gateway") (not .Values.ingress.gateway.useHTTPProxy) }}
+{{- $pathType := .Values.ingress.pathType }}
+{{- if eq $pathType "Prefix" }}{{- $pathType = "PathPrefix" }}{{- end }}
+{{- if eq $pathType "ImplementationSpecific" }}{{- $pathType = "PathPrefix" }}{{- end }}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -22,7 +25,7 @@ spec:
   rules:
     - matches:
         - path:
-            type: {{ .Values.ingress.pathType }}
+            type: {{ $pathType }}
             value: {{ .Values.ingress.path }}
       backendRefs:
         - name: {{ include "adi-stack.fullname" . }}

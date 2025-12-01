@@ -1,13 +1,26 @@
 # AWS EKS Cloud Provider Values
 # Layer this on top of your base values file
 #
-# Usage:
+# Usage with Gateway API (recommended):
+#   helm install adi-stack ./adi-stack \
+#     -f examples/values-testnet.yaml \
+#     -f examples/values-cloud-aws.yaml \
+#     -f examples/values-ingress-contour.yaml \
+#     -f examples/values-performance-medium.yaml \
+#     --set ingress.hostname=rpc.example.com
+#
+# Usage with ALB Ingress (legacy):
 #   helm install adi-stack ./adi-stack \
 #     -f examples/values-testnet.yaml \
 #     -f examples/values-cloud-aws.yaml \
 #     -f examples/values-performance-medium.yaml
+#
+# IMPORTANT: Gateway API on AWS requires a post-install step to make the
+# LoadBalancer internet-facing. See README for details, or run:
+#   kubectl annotate svc -n <namespace> -l gateway.networking.k8s.io/gateway-name=adi-stack \
+#     service.beta.kubernetes.io/aws-load-balancer-scheme=internet-facing
 
-# Ingress - AWS ALB Controller
+# Ingress - AWS ALB Controller (for traditional Ingress, not Gateway API)
 ingress:
   kubernetes:
     className: alb
