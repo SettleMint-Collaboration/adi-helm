@@ -12,7 +12,7 @@
 #
 # Apply:
 #   # IMPORTANT: Edit the email address first!
-#   kubectl apply -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/cert-manager-clusterissuer.yaml
+#   kubectl apply -f https://raw.githubusercontent.com/SettleMint-Collaboration/adi-helm/main/adi-stack/examples/support/cert-manager-clusterissuer.yaml
 #
 # For staging/testing (no rate limits, untrusted certs):
 #   Change server to: https://acme-staging-v02.api.letsencrypt.org/directory

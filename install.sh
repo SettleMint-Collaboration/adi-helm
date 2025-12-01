@@ -237,7 +237,7 @@ case "$INGRESS_CONTROLLER" in
             log_warn "  helm repo add contour https://projectcontour.github.io/helm-charts"
             log_warn "  helm repo update"
             log_warn "  helm install contour contour/contour -n gateway --create-namespace \\"
-            log_warn "    -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/contour-values-aws.yaml"
+            log_warn "    -f https://raw.githubusercontent.com/SettleMint-Collaboration/adi-helm/main/adi-stack/examples/support/contour-values-aws.yaml"
             log_error "Contour is required for HTTPProxy ingress"
         fi
         # Add Contour ingress values file

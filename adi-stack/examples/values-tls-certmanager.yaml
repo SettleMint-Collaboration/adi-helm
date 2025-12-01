@@ -11,7 +11,7 @@
 #     --set extraArgs={--enable-gateway-api}
 #
 #   # 2. Create ClusterIssuer (edit email first!)
-#   kubectl apply -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/cert-manager-clusterissuer.yaml
+#   kubectl apply -f https://raw.githubusercontent.com/SettleMint-Collaboration/adi-helm/main/adi-stack/examples/support/cert-manager-clusterissuer.yaml
 #
 # Usage with Contour HTTPProxy:
 #   helm install adi-stack ./adi-stack -n adi-testnet --create-namespace \
