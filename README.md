@@ -9,17 +9,17 @@
 </p>
 <br/>
 <p align="center">
-<a href="https://github.com/settlemint/adi-helm/actions?query=branch%3Amain"><img src="https://github.com/settlemint/adi-helm/actions/workflows/release.yml/badge.svg?event=push&branch=main" alt="CI status" /></a>
-<a href="https://github.com/settlemint/adi-helm" rel="nofollow"><img src="https://img.shields.io/badge/helm-v3%20%7C%20v4-blue" alt="Helm v3 | v4"></a>
-<a href="https://github.com/settlemint/adi-helm" rel="nofollow"><img src="https://img.shields.io/badge/kubernetes-1.24%2B-blue" alt="Kubernetes 1.24+"></a>
-<a href="https://github.com/settlemint/adi-helm" rel="nofollow"><img src="https://img.shields.io/github/license/settlemint/adi-helm" alt="License"></a>
-<a href="https://github.com/settlemint/adi-helm" rel="nofollow"><img src="https://img.shields.io/github/stars/settlemint/adi-helm" alt="stars"></a>
+<a href="https://github.com/SettleMint-Collaboration/adi-helm/actions?query=branch%3Amain"><img src="https://github.com/SettleMint-Collaboration/adi-helm/actions/workflows/release.yml/badge.svg?event=push&branch=main" alt="CI status" /></a>
+<a href="https://github.com/SettleMint-Collaboration/adi-helm" rel="nofollow"><img src="https://img.shields.io/badge/helm-v3%20%7C%20v4-blue" alt="Helm v3 | v4"></a>
+<a href="https://github.com/SettleMint-Collaboration/adi-helm" rel="nofollow"><img src="https://img.shields.io/badge/kubernetes-1.24%2B-blue" alt="Kubernetes 1.24+"></a>
+<a href="https://github.com/SettleMint-Collaboration/adi-helm" rel="nofollow"><img src="https://img.shields.io/github/license/SettleMint-Collaboration/adi-helm" alt="License"></a>
+<a href="https://github.com/SettleMint-Collaboration/adi-helm" rel="nofollow"><img src="https://img.shields.io/github/stars/SettleMint-Collaboration/adi-helm" alt="stars"></a>
 </p>
 
 <div align="center">
   <a href="https://github.com/ADI-Foundation-Labs/ADI-Network-Documentation">Documentation</a>
   <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-  <a href="https://github.com/settlemint/adi-helm/issues">Issues</a>
+  <a href="https://github.com/SettleMint-Collaboration/adi-helm/issues">Issues</a>
   <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
   <a href="https://adifoundation.ai">ADI Foundation</a>
   <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
@@ -56,7 +56,7 @@ The ADI Stack Helm Chart provides a production-ready deployment solution for run
 Clone the repository and use the provided scripts:
 
 ```bash
-git clone https://github.com/settlemint/adi-helm.git
+git clone https://github.com/SettleMint-Collaboration/adi-helm.git
 cd adi-helm
 ```
 
@@ -327,7 +327,7 @@ kubectl patch challenge my-challenge -n adi-testnet \
 
 ## Contributing
 
-Contributions are welcome! Please read our contributing guidelines and submit pull requests to the [GitHub repository](https://github.com/settlemint/adi-helm).
+Contributions are welcome! Please read our contributing guidelines and submit pull requests to the [GitHub repository](https://github.com/SettleMint-Collaboration/adi-helm).
 
 ## About
 

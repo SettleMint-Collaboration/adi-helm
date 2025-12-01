@@ -12,7 +12,7 @@
 # Install:
 #   helm install contour contour/contour \
 #     -n gateway --create-namespace \
-#     -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/contour-values-aws.yaml
+#     -f https://raw.githubusercontent.com/SettleMint-Collaboration/adi-helm/main/adi-stack/examples/support/contour-values-aws.yaml
 #
 # Verify:
 #   kubectl get crd httpproxies.projectcontour.io

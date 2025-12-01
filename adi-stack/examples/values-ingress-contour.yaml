@@ -12,7 +12,7 @@
 #   helm repo add contour https://projectcontour.github.io/helm-charts
 #   helm repo update
 #   helm install contour contour/contour -n gateway --create-namespace \
-#     -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/contour-values-aws.yaml
+#     -f https://raw.githubusercontent.com/SettleMint-Collaboration/adi-helm/main/adi-stack/examples/support/contour-values-aws.yaml
 #
 # Usage:
 #   helm install adi-stack ./adi-stack -n adi-testnet --create-namespace \
@@ -30,8 +30,8 @@
 ingress:
   enabled: true
   type: gateway
-  # -- Set your hostname (REQUIRED)
-  hostname: ""
+  # -- Set your hostname (override this with --set ingress.hostname=your.domain.com)
+  hostname: "adi.example.com"
 
   # TLS settings are inherited from values-tls-certmanager.yaml when using -t flag
   # Do not override tls.enabled here to allow cert-manager integration

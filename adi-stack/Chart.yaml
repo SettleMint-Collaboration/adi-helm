@@ -15,9 +15,9 @@ keywords:
 maintainers:
   - name: SettleMint
     url: https://settlemint.com
-home: https://github.com/settlemint/adi-helm
+home: https://github.com/SettleMint-Collaboration/adi-helm
 sources:
-  - https://github.com/settlemint/adi-helm
-icon: https://raw.githubusercontent.com/settlemint/adi-helm/main/adi.svg
+  - https://github.com/SettleMint-Collaboration/adi-helm
+icon: https://raw.githubusercontent.com/SettleMint-Collaboration/adi-helm/main/adi.svg
 annotations:
   artifacthub.io/license: MIT
