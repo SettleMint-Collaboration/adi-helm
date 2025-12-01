@@ -152,48 +152,38 @@ cd adi-helm
 
 ## Ingress Controller Setup
 
-### Contour with Gateway API (Recommended)
+### Contour with HTTPProxy (Recommended)
 
-Contour with Gateway API provides timeout configuration essential for blockchain JSON-RPC workloads.
+Contour with HTTPProxy provides timeout configuration essential for blockchain JSON-RPC workloads. Contour is installed once and watches HTTPProxy resources across all namespaces.
 
 **Step 1: Install Contour with Helm**
 
-Contour is installed once in a shared `gateway` namespace and handles routing for all adi-stack deployments.
-
 ```bash
 # Add the official Contour Helm repository
-helm repo add projectcontour https://projectcontour.io/charts
+helm repo add contour https://projectcontour.github.io/helm-charts
 helm repo update
 
 # For AWS EKS (internet-facing NLB)
-helm install contour projectcontour/contour \
+helm install contour contour/contour \
   -n gateway --create-namespace \
   -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/contour-values-aws.yaml
 
 # For Google GKE
-helm install contour projectcontour/contour \
+helm install contour contour/contour \
   -n gateway --create-namespace \
   -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/contour-values-gke.yaml
 
 # For Azure AKS
-helm install contour projectcontour/contour \
+helm install contour contour/contour \
   -n gateway --create-namespace \
   -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/contour-values-azure.yaml
-```
-
-**Step 2: Create shared Gateway**
-
-```bash
-# Create GatewayClass and shared Gateway (accepts routes from all namespaces)
-kubectl apply -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/gateway-shared.yaml
 
 # Verify
-kubectl get gatewayclass contour
-kubectl get gateway -n gateway
 kubectl get pods -n gateway
+kubectl get svc -n gateway contour-envoy
 ```
 
-**Step 3: Deploy adi-stack**
+**Step 2: Deploy adi-stack**
 
 Deploy testnet and/or mainnet - both use the shared Contour/Envoy instance:
 
@@ -203,27 +193,23 @@ helm install adi-stack adi-stack/adi-stack \
   -n adi-testnet --create-namespace \
   -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-testnet.yaml \
   -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-ingress-contour.yaml \
-  --set ingress.hostname=testnet.example.com \
-  --set ingress.gateway.gatewayName=adi-gateway \
-  --set ingress.gateway.gatewayNamespace=gateway
+  --set ingress.hostname=testnet.example.com
 
 # Mainnet
 helm install adi-stack adi-stack/adi-stack \
   -n adi-mainnet --create-namespace \
   -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-production.yaml \
   -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-ingress-contour.yaml \
-  --set ingress.hostname=mainnet.example.com \
-  --set ingress.gateway.gatewayName=adi-gateway \
-  --set ingress.gateway.gatewayNamespace=gateway
+  --set ingress.hostname=mainnet.example.com
 ```
 
-**Step 4: Configure DNS**
+**Step 3: Configure DNS**
 
 Point your domains to the shared LoadBalancer:
 
 ```bash
 # Get the LoadBalancer hostname/IP
-kubectl get svc -n gateway envoy \
+kubectl get svc -n gateway contour-envoy \
   -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
 ```
 
@@ -317,37 +303,36 @@ l1Rpc:
 
 **Contour ingress controller (install before adi-stack):**
 
-| File                                         | Description                              |
-| -------------------------------------------- | ---------------------------------------- |
-| `examples/support/contour-values-aws.yaml`   | Contour for AWS EKS (internet-facing)    |
-| `examples/support/contour-values-gke.yaml`   | Contour for Google GKE                   |
-| `examples/support/contour-values-azure.yaml` | Contour for Azure AKS                    |
-| `examples/support/gateway-shared.yaml`       | Shared Gateway for multi-namespace setup |
+| File                                         | Description                           |
+| -------------------------------------------- | ------------------------------------- |
+| `examples/support/contour-values-aws.yaml`   | Contour for AWS EKS (internet-facing) |
+| `examples/support/contour-values-gke.yaml`   | Contour for Google GKE                |
+| `examples/support/contour-values-azure.yaml` | Contour for Azure AKS                 |
 
 **Optional add-ons:**
 
 | File                                               | Description                                     |
 | -------------------------------------------------- | ----------------------------------------------- |
-| `examples/values-ingress-contour.yaml`             | Contour Gateway API (recommended for JSON-RPC)  |
+| `examples/values-ingress-contour.yaml`             | Contour HTTPProxy (recommended for JSON-RPC)    |
 | `examples/values-tls-certmanager.yaml`             | TLS with cert-manager (Ingress and Gateway API) |
 | `examples/support/cert-manager-clusterissuer.yaml` | ClusterIssuer for Let's Encrypt                 |
 
 ### TLS with cert-manager
 
-For automatic TLS certificates with Let's Encrypt and Gateway API:
+For automatic TLS certificates with Let's Encrypt:
 
-**Step 1: Install and configure cert-manager**
+**Step 1: Install cert-manager with Helm**
 
 ```bash
-# Install cert-manager
-kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.17.1/cert-manager.yaml
+# Add the cert-manager Helm repository
+helm repo add jetstack https://charts.jetstack.io
+helm repo update
 
-# Wait for cert-manager to be ready
-kubectl wait --for=condition=Available deployment/cert-manager -n cert-manager --timeout=120s
-
-# Enable Gateway API support
-kubectl patch deployment cert-manager -n cert-manager \
-  --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--enable-gateway-api"}]'
+# Install cert-manager with CRDs
+helm install cert-manager jetstack/cert-manager \
+  -n cert-manager --create-namespace \
+  --set crds.enabled=true \
+  --set extraArgs={--enable-gateway-api}
 
 # Create ClusterIssuer (IMPORTANT: edit email address first!)
 kubectl apply -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/cert-manager-clusterissuer.yaml
@@ -356,23 +341,33 @@ kubectl apply -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-
 **Step 2: Deploy with TLS**
 
 ```bash
+# Testnet with TLS
 helm install adi-stack adi-stack/adi-stack \
-  -n adi-stack --create-namespace \
+  -n adi-testnet --create-namespace \
   -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-testnet.yaml \
   -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-ingress-contour.yaml \
   -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-tls-certmanager.yaml \
-  --set ingress.hostname=rpc.example.com
+  --set ingress.hostname=testnet.example.com
+
+# Mainnet with TLS
+helm install adi-stack adi-stack/adi-stack \
+  -n adi-mainnet --create-namespace \
+  -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-production.yaml \
+  -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-ingress-contour.yaml \
+  -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/values-tls-certmanager.yaml \
+  --set ingress.hostname=mainnet.example.com
 ```
 
 **Step 3: Configure DNS and verify**
 
 ```bash
 # Get LoadBalancer hostname and create CNAME record
-kubectl get svc -n projectcontour envoy \
+kubectl get svc -n gateway contour-envoy \
   -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
 
 # Check certificate status (should show READY: True after DNS propagates)
-kubectl get certificate -n adi-stack
+kubectl get certificate -n adi-testnet
+kubectl get certificate -n adi-mainnet
 ```
 
 ## Monitoring

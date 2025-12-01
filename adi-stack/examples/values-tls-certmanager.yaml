@@ -2,28 +2,23 @@
 # Layer this on top of your base values file
 #
 # Prerequisites:
-#   # 1. Install cert-manager
-#   kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.17.1/cert-manager.yaml
+#   # 1. Install cert-manager with Helm
+#   helm repo add jetstack https://charts.jetstack.io
+#   helm repo update
+#   helm install cert-manager jetstack/cert-manager \
+#     -n cert-manager --create-namespace \
+#     --set crds.enabled=true \
+#     --set extraArgs={--enable-gateway-api}
 #
-#   # 2. Enable Gateway API support (required for Contour/Gateway API)
-#   kubectl patch deployment cert-manager -n cert-manager \
-#     --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--enable-gateway-api"}]'
+#   # 2. Create ClusterIssuer (edit email first!)
+#   kubectl apply -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/cert-manager-clusterissuer.yaml
 #
-#   # 3. Create ClusterIssuer (edit email first!)
-#   kubectl apply -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/cert-manager-clusterissuer.yaml
-#
-# Usage with Gateway API (Contour):
-#   helm install adi-stack ./adi-stack -n adi-stack --create-namespace \
+# Usage with Contour HTTPProxy:
+#   helm install adi-stack ./adi-stack -n adi-testnet --create-namespace \
 #     -f examples/values-testnet.yaml \
 #     -f examples/values-ingress-contour.yaml \
 #     -f examples/values-tls-certmanager.yaml \
-#     --set ingress.hostname=rpc.example.com
-#
-# Usage with Kubernetes Ingress:
-#   helm install adi-stack ./adi-stack -n adi-stack --create-namespace \
-#     -f examples/values-testnet.yaml \
-#     -f examples/values-tls-certmanager.yaml \
-#     --set ingress.hostname=rpc.example.com
+#     --set ingress.hostname=testnet.example.com
 
 ingress:
   tls:

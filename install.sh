@@ -58,7 +58,7 @@ Examples:
   $0 testnet -c gke -p medium          # GKE with medium-performance storage
   $0 mainnet -c azure -p high          # Azure with premium storage
   $0 testnet -c aws -t                 # AWS with cert-manager TLS
-  $0 testnet -i contour                # Contour ingress with Gateway API
+  $0 testnet -i contour                # Contour ingress with HTTPProxy
   $0 testnet -i none                   # Disable ingress (LoadBalancer only)
   $0 testnet -s erigon.enabled=false -s l1Rpc.url=https://eth.example.com  # External L1 RPC
 
@@ -231,27 +231,23 @@ fi
 # Add ingress controller configuration
 case "$INGRESS_CONTROLLER" in
     contour)
-        # Check for Gateway API CRDs
-        if ! kubectl get crd gateways.gateway.networking.k8s.io &>/dev/null; then
-            log_warn "Gateway API CRDs not found. Install Contour with Helm first:"
-            log_warn "  helm repo add projectcontour https://projectcontour.io/charts"
+        # Check for Contour HTTPProxy CRD (installed with Contour Helm chart)
+        if ! kubectl get crd httpproxies.projectcontour.io &>/dev/null; then
+            log_warn "Contour HTTPProxy CRD not found. Install Contour with Helm first:"
+            log_warn "  helm repo add contour https://projectcontour.github.io/helm-charts"
             log_warn "  helm repo update"
-            log_warn "  helm install contour projectcontour/contour -n gateway --create-namespace \\"
+            log_warn "  helm install contour contour/contour -n gateway --create-namespace \\"
             log_warn "    -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/contour-values-aws.yaml"
-            log_warn "  kubectl apply -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/gateway-shared.yaml"
-            log_error "Gateway API CRDs are required for Contour ingress"
+            log_error "Contour is required for HTTPProxy ingress"
         fi
-        # Check for shared Gateway
-        if ! kubectl get gateway adi-gateway -n gateway &>/dev/null; then
-            log_warn "Shared Gateway 'adi-gateway' not found in 'gateway' namespace. Create it with:"
-            log_warn "  kubectl apply -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/gateway-shared.yaml"
-            log_error "Shared Gateway is required for Contour ingress"
+        # Add Contour ingress values file
+        CONTOUR_VALUES="${CHART_DIR}/examples/values-ingress-contour.yaml"
+        if [[ -f "$CONTOUR_VALUES" ]]; then
+            VALUES_FILES+=("$CONTOUR_VALUES")
+            log_info "Ingress: Contour with HTTPProxy (using $CONTOUR_VALUES)"
+        else
+            log_error "Contour values file not found: $CONTOUR_VALUES"
         fi
-        HELM_SETS+=("ingress.type=gateway")
-        HELM_SETS+=("ingress.gateway.className=contour")
-        HELM_SETS+=("ingress.gateway.gatewayName=adi-gateway")
-        HELM_SETS+=("ingress.gateway.gatewayNamespace=gateway")
-        log_info "Ingress: Contour with Gateway API"
         ;;
     nginx)
         log_warn "NGINX Ingress is end-of-life (March 2026). Consider migrating to Contour."

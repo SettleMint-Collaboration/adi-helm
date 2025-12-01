@@ -1,36 +1,31 @@
-# Contour Gateway API configuration for JSON-RPC workloads
-# Layer this with base config for Gateway API ingress with timeout support
+# Contour HTTPProxy configuration for JSON-RPC workloads
+# Uses Contour's native HTTPProxy CRD with timeout support
+#
+# Architecture:
+#   - Contour + Envoy runs once in 'gateway' namespace
+#   - Each adi-stack creates an HTTPProxy in its own namespace
+#   - Contour watches all HTTPProxy resources cluster-wide
+#   - Single LoadBalancer serves all deployments
 #
 # Prerequisites:
-#   # 1. Install Contour in shared gateway namespace
-#   helm repo add projectcontour https://projectcontour.io/charts
+#   # Install Contour in gateway namespace
+#   helm repo add contour https://projectcontour.github.io/helm-charts
 #   helm repo update
-#   helm install contour projectcontour/contour -n gateway --create-namespace \
+#   helm install contour contour/contour -n gateway --create-namespace \
 #     -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/contour-values-aws.yaml
 #
-#   # 2. Create shared Gateway
-#   kubectl apply -f https://raw.githubusercontent.com/settlemint/adi-helm/main/adi-stack/examples/support/gateway-shared.yaml
-#
-#   # 3. Verify
-#   kubectl get gatewayclass contour
-#   kubectl get gateway -n gateway
-#
-# Usage (referencing shared Gateway):
+# Usage:
 #   helm install adi-stack ./adi-stack -n adi-testnet --create-namespace \
 #     -f examples/values-testnet.yaml \
 #     -f examples/values-ingress-contour.yaml \
-#     --set ingress.hostname=testnet.example.com \
-#     --set ingress.gateway.gatewayName=adi-gateway \
-#     --set ingress.gateway.gatewayNamespace=gateway
+#     --set ingress.hostname=testnet.example.com
 #
 # With TLS (cert-manager):
 #   helm install adi-stack ./adi-stack -n adi-testnet --create-namespace \
 #     -f examples/values-testnet.yaml \
 #     -f examples/values-ingress-contour.yaml \
 #     -f examples/values-tls-certmanager.yaml \
-#     --set ingress.hostname=testnet.example.com \
-#     --set ingress.gateway.gatewayName=adi-gateway \
-#     --set ingress.gateway.gatewayNamespace=gateway
+#     --set ingress.hostname=testnet.example.com
 
 ingress:
   enabled: true
