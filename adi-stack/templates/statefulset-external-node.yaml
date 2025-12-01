@@ -50,6 +50,8 @@ spec:
             - -c
             - |
               mkdir -p /chain/db/node1 /chain/db/shared /chain/db/node1/block_dumps
+              # Ensure directories are group-writable (fsGroup handles ownership)
+              chmod -R g+w /chain/db
           volumeMounts:
             - name: chain-data
               mountPath: /chain
@@ -58,11 +60,7 @@ spec:
             {{- toYaml .Values.externalNode.containerSecurityContext | nindent 12 }}
           {{- else }}
           securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-                - ALL
+            {{- include "adi-stack.openshiftContainerSecurityContext" . | nindent 12 }}
           {{- end }}
         {{- if .Values.proofSync.enabled }}
         - name: init-proof-sync
@@ -91,11 +89,7 @@ spec:
             {{- toYaml .Values.proofSync.containerSecurityContext | nindent 12 }}
           {{- else }}
           securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-                - ALL
+            {{- include "adi-stack.openshiftContainerSecurityContext" . | nindent 12 }}
           {{- end }}
           volumeMounts:
             - name: chain-data
@@ -175,6 +169,9 @@ spec:
             periodSeconds: {{ .Values.externalNode.livenessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.externalNode.livenessProbe.timeoutSeconds }}
             failureThreshold: {{ .Values.externalNode.livenessProbe.failureThreshold }}
+          # NOTE: TCP probe used instead of HTTP because the /health endpoint may not
+          # respond reliably. Trade-off: TCP only verifies port is open, not full readiness.
+          # Use higher initialDelaySeconds if premature ready status causes issues.
           readinessProbe:
             tcpSocket:
               port: health
@@ -189,11 +186,7 @@ spec:
             {{- toYaml .Values.externalNode.containerSecurityContext | nindent 12 }}
           {{- else }}
           securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-                - ALL
+            {{- include "adi-stack.openshiftContainerSecurityContext" . | nindent 12 }}
           {{- end }}
           volumeMounts:
             - name: chain-data
@@ -228,11 +221,7 @@ spec:
             {{- toYaml .Values.proofSync.containerSecurityContext | nindent 12 }}
           {{- else }}
           securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-                - ALL
+            {{- include "adi-stack.openshiftContainerSecurityContext" . | nindent 12 }}
           {{- end }}
           volumeMounts:
             - name: chain-data
