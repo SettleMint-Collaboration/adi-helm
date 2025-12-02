@@ -75,3 +75,16 @@ jobs:
           skip_existing: true
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Login to Distr
+        uses: docker/login-action@v3
+        with:
+          registry: pkg.distribution.settlemint.com
+          username: ${{ github.actor }}
+          password: ${{ secrets.DISTR_TOKEN }}
+
+      - name: Package Helm chart
+        run: helm package adi-stack --destination .
+
+      - name: Push to Distr
+        run: helm push ./adi-stack-*.tgz oci://pkg.distribution.settlemint.com/settlemint
