@@ -44,11 +44,11 @@ fullnameOverride: ""
 # -- Genesis configuration for the blockchain
 genesis:
   # -- Bridgehub contract address
-  bridgehubAddress: "0xc1662F0478e0E93Dc6CC321281Eb180A21036Da6"
+  bridgehubAddress: "0x7a38c18a229ef8a0ae7104ba272a46280f2d59cb"
   # -- Chain ID
   chainId: "36900"
   # -- Main node RPC URL
-  mainNodeRpcUrl: "https://rpc.ab.testnet.adifoundation.ai/"
+  mainNodeRpcUrl: "https://rpc.adifoundation.ai"
 
 # -- L1 RPC configuration
 l1Rpc:
@@ -421,7 +421,7 @@ proofSync:
     pullPolicy: IfNotPresent
 
   # -- Azure Blob Storage URL for proofs
-  storageUrl: "https://adiproofs.blob.core.windows.net/shared"
+  storageUrl: "https://adimainnet.blob.core.windows.net/proofs"
 
   # -- Sync interval in seconds
   syncInterval: 60

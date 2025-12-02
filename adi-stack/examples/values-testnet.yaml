@@ -22,6 +22,10 @@ cloudflared:
   # -- Replay endpoint hostname
   replayHostname: "replay.ab.testnet.adifoundation.ai"
 
+# Disable proof-sync for testnet (mainnet uses https://adimainnet.blob.core.windows.net/proofs)
+proofSync:
+  storageUrl: "https://adiproofs.blob.core.windows.net/shared"
+
 # Ingress configuration
 # Ingress controller overlays (pick one):
 #   -f values-ingress-contour.yaml (Gateway API - recommended)

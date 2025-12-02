@@ -5,12 +5,6 @@
 #     -f examples/values-openshift-mainnet.yaml \
 #     -f examples/values-performance-high.yaml
 
-# Genesis configuration - REQUIRED
-genesis:
-  bridgehubAddress: "0x0000000000000000000000000000000000000000"
-  chainId: "270"
-  mainNodeRpcUrl: "https://mainnet.example.com"
-
 # Erigon - resources come from performance tier overlay
 erigon:
   enabled: true
@@ -49,7 +43,7 @@ cloudflared:
     name: cloudflared-credentials
     key: tunnel-token
 
-# Proof sync
+# Proof sync - storageUrl inherited from values.yaml (mainnet base)
 proofSync:
   enabled: true
   existingSecret:

@@ -7,12 +7,6 @@
 #     -f examples/values-performance-high.yaml \
 #     -f examples/values-tls-certmanager.yaml
 
-# Genesis configuration - REQUIRED
-genesis:
-  bridgehubAddress: "0x7a38c18a229ef8a0ae7104ba272a46280f2d59cb"
-  chainId: "36900"
-  mainNodeRpcUrl: "https://rpc.adifoundation.ai/"
-
 # Ingress - production with TLS
 # Ingress controller overlays (pick one):
 #   -f values-ingress-contour.yaml (Gateway API - recommended)
