@@ -44,9 +44,9 @@ fullnameOverride: ""
 # -- Genesis configuration for the blockchain
 genesis:
   # -- Bridgehub contract address
-  bridgehubAddress: "0xFd3cE61C65dDd1039e6e9e07FB6D6e16388d1cc7"
+  bridgehubAddress: "0x7a38c18a229ef8a0ae7104ba272a46280f2d59cb"
   # -- Chain ID
-  chainId: "99999"
+  chainId: "36900"
   # -- Main node RPC URL
   mainNodeRpcUrl: "https://rpc.adifoundation.ai"
 
@@ -246,7 +246,7 @@ externalNode:
     # -- Image repository
     repository: adi-chain/external-node
     # -- Image tag (defaults to Chart.appVersion)
-    tag: "v0.10.1-b5"
+    tag: "latest"
     # -- Image pull policy
     pullPolicy: IfNotPresent
 
