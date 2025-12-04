@@ -44,9 +44,9 @@ fullnameOverride: ""
 # -- Genesis configuration for the blockchain
 genesis:
   # -- Bridgehub contract address
-  bridgehubAddress: "0x7a38c18a229ef8a0ae7104ba272a46280f2d59cb"
+  bridgehubAddress: "0xFd3cE61C65dDd1039e6e9e07FB6D6e16388d1cc7"
   # -- Chain ID
-  chainId: "36900"
+  chainId: "99999"
   # -- Main node RPC URL
   mainNodeRpcUrl: "https://rpc.adifoundation.ai"
 
