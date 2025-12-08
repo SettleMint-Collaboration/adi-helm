@@ -13,10 +13,12 @@ erigon:
     checkpointSyncUrl: "https://sepolia.beaconstate.info/eth/v2/debug/beacon/states/finalized"
 
 # Genesis configuration - REQUIRED
+# mainNodeRpcUrl is the sequencer endpoint that external nodes proxy transactions to.
+# Without this, external nodes return "Transaction submission not implemented"
 genesis:
   bridgehubAddress: "0xFd3cE61C65dDd1039e6e9e07FB6D6e16388d1cc7"
   chainId: "99999"
-  mainNodeRpcUrl: "https://rpc.ab.testnet.adifoundation.ai/"
+  mainNodeRpcUrl: "https://rpc.ab.testnet.adifoundation.ai"
 
 cloudflared:
   # -- Replay endpoint hostname

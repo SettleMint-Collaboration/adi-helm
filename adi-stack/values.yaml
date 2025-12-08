@@ -47,7 +47,14 @@ genesis:
   bridgehubAddress: "0x7a38c18a229ef8a0ae7104ba272a46280f2d59cb"
   # -- Chain ID
   chainId: "36900"
-  # -- Main node RPC URL
+  # -- Main node RPC URL (sequencer endpoint)
+  # CRITICAL: This URL enables transaction proxying from external nodes to the sequencer.
+  # External nodes do NOT sequence transactions themselves - they forward all
+  # eth_sendRawTransaction calls to this URL. Without this, external nodes return:
+  # "Transaction submission not implemented on external nodes"
+  #
+  # For mainnet: https://rpc.adifoundation.ai (sequencer)
+  # For testnet: https://rpc.ab.testnet.adifoundation.ai (sequencer)
   mainNodeRpcUrl: "https://rpc.adifoundation.ai"
 
 # -- L1 RPC configuration

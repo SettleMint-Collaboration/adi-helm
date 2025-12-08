@@ -136,6 +136,9 @@ spec:
                 configMapKeyRef:
                   name: {{ include "adi-stack.fullname" . }}-genesis
                   key: genesis_chain_id
+            # CRITICAL: This URL enables transaction proxying to the sequencer.
+            # External nodes forward eth_sendRawTransaction to this endpoint.
+            # Without it: "Transaction submission not implemented on external nodes"
             - name: general_main_node_rpc_url
               valueFrom:
                 configMapKeyRef:
