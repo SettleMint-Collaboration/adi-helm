@@ -159,6 +159,8 @@ spec:
               value: "3312"
             - name: RUST_LOG
               value: {{ .Values.externalNode.logLevel | quote }}
+            - name: EN_API_NAMESPACES
+              value: {{ .Values.externalNode.apiNamespaces | quote }}
             {{- with .Values.externalNode.extraEnv }}
             {{- toYaml . | nindent 12 }}
             {{- end }}

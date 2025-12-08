@@ -258,6 +258,9 @@ externalNode:
   # -- Log level (RUST_LOG format)
   logLevel: "info,zksync_os_server=info,zksync_os_sequencer=info,zksync_os_merkle_tree=info,zksync_os_priority_tree=info,zksync_os_server::prover_api=info"
 
+  # -- API namespaces to expose (EN_API_NAMESPACES)
+  apiNamespaces: "eth,net,web3,zks,pubsub,en"
+
   # -- Persistent storage for blockchain data
   persistence:
     # -- Storage size
