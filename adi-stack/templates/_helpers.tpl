@@ -104,7 +104,11 @@ Return the proper image name for external-node
 {{- if .Values.global.imageRegistry -}}
 {{- $registry = .Values.global.imageRegistry -}}
 {{- end -}}
+{{- if .Values.externalNode.image.digest -}}
+{{- printf "%s/%s@%s" $registry .Values.externalNode.image.repository .Values.externalNode.image.digest -}}
+{{- else -}}
 {{- printf "%s/%s:%s" $registry .Values.externalNode.image.repository (.Values.externalNode.image.tag | default .Chart.AppVersion) -}}
+{{- end -}}
 {{- end -}}
 
 {{/*
