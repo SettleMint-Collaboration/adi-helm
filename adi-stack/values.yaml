@@ -245,8 +245,10 @@ externalNode:
     registry: harbor.sre.ideasoft.io
     # -- Image repository
     repository: adi-chain/external-node
-    # -- Image tag (defaults to Chart.appVersion)
-    tag: "latest"
+    # -- Image digest (preferred over tag for reproducibility)
+    digest: "sha256:c317d474e94a9ef89b752f14af015751d6b612b5510fb5d277be0adbf3fb76df"
+    # -- Image tag (ignored when digest is set)
+    tag: ""
     # -- Image pull policy
     pullPolicy: IfNotPresent
 
