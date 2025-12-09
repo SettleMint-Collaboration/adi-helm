@@ -5,6 +5,33 @@ entries:
       artifacthub.io/license: MIT
     apiVersion: v2
     appVersion: v0.10.1-b5
+    created: "2025-12-09T13:10:54.91949717Z"
+    description: ADI Stack External Node for zkOS L2 blockchain
+    digest: d56b71b2d325310a17984ac84f2c1baa4ea39e83aa63a4fe5ac30dae80567142
+    home: https://github.com/SettleMint-Collaboration/adi-helm
+    icon: https://raw.githubusercontent.com/SettleMint-Collaboration/adi-helm/main/adi.svg
+    keywords:
+    - blockchain
+    - zkos
+    - adi
+    - l2
+    - zksync
+    - ethereum
+    kubeVersion: '>=1.24.0-0'
+    maintainers:
+    - name: SettleMint
+      url: https://settlemint.com
+    name: adi-stack
+    sources:
+    - https://github.com/SettleMint-Collaboration/adi-helm
+    type: application
+    urls:
+    - https://github.com/SettleMint-Collaboration/adi-helm/releases/download/adi-stack-0.1.15/adi-stack-0.1.15.tgz
+    version: 0.1.15
+  - annotations:
+      artifacthub.io/license: MIT
+    apiVersion: v2
+    appVersion: v0.10.1-b5
     created: "2025-12-08T13:05:12.228510882Z"
     description: ADI Stack External Node for zkOS L2 blockchain
     digest: 159b713daf01a9d541bc94403bd2cfde522f6bae7ce82aa768373602918ec24a
@@ -244,4 +271,4 @@ entries:
     urls:
     - https://github.com/settlemint/adi-helm/releases/download/adi-stack-0.1.1/adi-stack-0.1.1.tgz
     version: 0.1.1
-generated: "2025-12-08T13:05:12.22854708Z"
+generated: "2025-12-09T13:10:54.919535762Z"
