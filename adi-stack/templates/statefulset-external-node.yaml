@@ -115,11 +115,34 @@ spec:
               protocol: TCP
           env:
             {{- if .Values.erigon.enabled }}
-            # Using internal Erigon L1 node for L1 RPC
+            # Primary: Internal Erigon L1 node
             - name: GENERAL_L1_RPC_URL
               value: {{ include "adi-stack.l1RpcUrl" . | quote }}
+            {{- if .Values.l1Rpc.fallback.enabled }}
+            # Fallback: External RPC while Erigon syncs
+            {{- if .Values.l1Rpc.fallback.url }}
+            - name: GENERAL_L1_RPC_FALLBACK_URL
+              value: {{ .Values.l1Rpc.fallback.url | quote }}
+            {{- else if .Values.l1Rpc.fallback.existingSecret }}
+            - name: GENERAL_L1_RPC_FALLBACK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "adi-stack.l1RpcFallbackSecretName" . }}
+                  key: {{ include "adi-stack.l1RpcFallbackSecretKey" . }}
+            {{- else if .Values.l1Rpc.url }}
+            # Using l1Rpc.url as fallback since no dedicated fallback specified
+            - name: GENERAL_L1_RPC_FALLBACK_URL
+              value: {{ .Values.l1Rpc.url | quote }}
+            {{- else if .Values.l1Rpc.existingSecret }}
+            - name: GENERAL_L1_RPC_FALLBACK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "adi-stack.l1RpcSecretName" . }}
+                  key: {{ include "adi-stack.l1RpcSecretKey" . }}
+            {{- end }}
+            {{- end }}
             {{- else }}
-            # Using external L1 RPC (from secret)
+            # External-only mode: Using external L1 RPC
             - name: GENERAL_L1_RPC_URL
               valueFrom:
                 secretKeyRef:

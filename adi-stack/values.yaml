@@ -59,12 +59,33 @@ genesis:
 
 # -- L1 RPC configuration
 l1Rpc:
-  # -- L1 RPC URL (REQUIRED unless reth.enabled - no default for security)
+  # -- L1 RPC URL (REQUIRED unless erigon.enabled - no default for security)
   url: ""
   # -- Use existing secret for L1 RPC URL
   existingSecret: ""
   # -- Key in existing secret
   existingSecretKey: "l1-rpc-url"
+
+  # -- Fallback RPC configuration for dual-mode operation
+  # When erigon.enabled=true AND fallback.enabled=true, the external node receives
+  # both the internal Erigon URL (primary) and a fallback external URL.
+  # This allows immediate operation using the external RPC while Erigon syncs.
+  #
+  # Example usage:
+  #   helm install adi ./adi-stack \
+  #     --set erigon.enabled=true \
+  #     --set l1Rpc.fallback.enabled=true \
+  #     --set l1Rpc.fallback.url=https://mainnet.infura.io/v3/YOUR_KEY
+  fallback:
+    # -- Enable fallback mode (use external RPC while Erigon syncs)
+    enabled: false
+    # -- Fallback RPC URL (if not using existingSecret)
+    # When empty but fallback.enabled=true, will use l1Rpc.url as fallback
+    url: ""
+    # -- Use existing secret for fallback URL
+    existingSecret: ""
+    # -- Key in existing secret for fallback URL
+    existingSecretKey: "l1-rpc-fallback-url"
 
 # -- Erigon Ethereum Node (recommended internal L1 RPC)
 # When enabled, provides an internal Ethereum mainnet node with integrated
