@@ -167,6 +167,28 @@ l1-rpc-url
 {{- end -}}
 
 {{/*
+Return the L1 RPC fallback secret name
+*/}}
+{{- define "adi-stack.l1RpcFallbackSecretName" -}}
+{{- if .Values.l1Rpc.fallback.existingSecret -}}
+{{- .Values.l1Rpc.fallback.existingSecret -}}
+{{- else -}}
+{{- include "adi-stack.fullname" . -}}-secrets
+{{- end -}}
+{{- end -}}
+
+{{/*
+Return the L1 RPC fallback secret key
+*/}}
+{{- define "adi-stack.l1RpcFallbackSecretKey" -}}
+{{- if .Values.l1Rpc.fallback.existingSecret -}}
+{{- .Values.l1Rpc.fallback.existingSecretKey -}}
+{{- else -}}
+l1-rpc-fallback-url
+{{- end -}}
+{{- end -}}
+
+{{/*
 Resolve L1 RPC URL
 Returns the L1 RPC URL based on configuration priority:
 1. erigon.enabled=true → internal Erigon service
@@ -192,10 +214,13 @@ Check if L1 RPC should use internal Erigon
 Warn about L1 RPC configuration conflicts
 */}}
 {{- define "adi-stack.warnL1RpcConflict" -}}
-{{- if and .Values.erigon.enabled (or .Values.l1Rpc.url .Values.l1Rpc.existingSecret) -}}
+{{- if and .Values.erigon.enabled .Values.l1Rpc.fallback.enabled -}}
+{{/* Dual-mode: Both Erigon and fallback are enabled - this is the expected new behavior */}}
+{{- else if and .Values.erigon.enabled (or .Values.l1Rpc.url .Values.l1Rpc.existingSecret) -}}
 WARNING: erigon.enabled=true overrides l1Rpc.url and l1Rpc.existingSecret.
          The external-node will use the internal Erigon node at:
          http://{{ include "adi-stack.fullname" . }}-erigon:{{ .Values.erigon.httpPort }}
+         To use external RPC as fallback while Erigon syncs, set l1Rpc.fallback.enabled=true
 {{- end -}}
 {{- end -}}
 

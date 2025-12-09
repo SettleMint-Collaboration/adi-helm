@@ -72,6 +72,36 @@ erigon:
       memory: "16Gi"
 ```
 
+#### L1 RPC with Fallback (Dual-Mode)
+
+Run Erigon node while using an external RPC endpoint as fallback during sync.
+This allows immediate operation using external RPC while Erigon syncs (days/weeks for mainnet).
+
+```yaml
+erigon:
+  enabled: true
+
+l1Rpc:
+  fallback:
+    enabled: true
+    url: "https://mainnet.infura.io/v3/YOUR_KEY"
+```
+
+Or use an existing secret:
+
+```yaml
+l1Rpc:
+  fallback:
+    enabled: true
+    existingSecret: "my-rpc-secret"
+    existingSecretKey: "fallback-url"
+```
+
+When `fallback.enabled=true`:
+
+- External node receives `GENERAL_L1_RPC_URL` (Erigon) and `GENERAL_L1_RPC_FALLBACK_URL` (external)
+- If no `fallback.url` is specified, `l1Rpc.url` is used as fallback
+
 #### External Node
 
 ```yaml
