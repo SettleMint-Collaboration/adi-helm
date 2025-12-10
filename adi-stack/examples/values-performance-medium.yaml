@@ -11,7 +11,7 @@ erigon:
   resources:
     requests:
       cpu: "2"
-      memory: "8Gi"
+      memory: "10Gi"
     limits:
       cpu: "4"
       memory: "16Gi"
