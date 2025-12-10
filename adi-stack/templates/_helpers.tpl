@@ -184,7 +184,7 @@ Return the L1 RPC fallback secret key
 {{- if .Values.l1Rpc.fallback.existingSecret -}}
 {{- .Values.l1Rpc.fallback.existingSecretKey -}}
 {{- else -}}
-l1-rpc-fallback-url
+l1-rpc-url
 {{- end -}}
 {{- end -}}
 
