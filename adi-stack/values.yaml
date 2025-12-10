@@ -67,9 +67,10 @@ l1Rpc:
   existingSecretKey: "l1-rpc-url"
 
   # -- Fallback RPC configuration for dual-mode operation
-  # When erigon.enabled=true AND fallback.enabled=true, the external node receives
-  # both the internal Erigon URL (primary) and a fallback external URL.
-  # This allows immediate operation using the external RPC while Erigon syncs.
+  # When erigon.enabled=true AND fallback.enabled=true:
+  # - Erigon syncs in the background
+  # - External node uses the fallback URL as GENERAL_L1_RPC_URL for immediate operation
+  # Once Erigon is synced, disable fallback to switch external node to use Erigon.
   #
   # Example usage:
   #   helm install adi ./adi-stack \

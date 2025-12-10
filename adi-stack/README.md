@@ -99,8 +99,10 @@ l1Rpc:
 
 When `fallback.enabled=true`:
 
-- External node receives `GENERAL_L1_RPC_URL` (Erigon) and `GENERAL_L1_RPC_FALLBACK_URL` (external)
-- If no `fallback.url` is specified, `l1Rpc.url` is used as fallback
+- Erigon syncs in the background
+- External node uses the fallback URL as `GENERAL_L1_RPC_URL` for immediate operation
+- If no `fallback.url` is specified, `l1Rpc.url` is used
+- Once Erigon is synced, disable fallback to switch external node to use Erigon
 
 #### External Node
 
