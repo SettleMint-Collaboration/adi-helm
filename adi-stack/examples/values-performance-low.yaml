@@ -10,11 +10,11 @@
 erigon:
   resources:
     requests:
-      cpu: "1"
-      memory: "4Gi"
-    limits:
       cpu: "2"
-      memory: "8Gi"
+      memory: "10Gi"
+    limits:
+      cpu: "4"
+      memory: "14Gi"
 
 externalNode:
   resources:
