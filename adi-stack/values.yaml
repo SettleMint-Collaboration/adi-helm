@@ -115,7 +115,7 @@ erigon:
 
   # -- Prune mode (archive, full, minimal)
   # archive: Full history (~2TB), full: Default (~1TB), minimal: Latest state (~500GB)
-  pruneMode: full
+  pruneMode: archive
 
   # -- Caplin (integrated consensus layer) configuration
   caplin:
@@ -167,7 +167,7 @@ erigon:
     # -- Enable persistent storage
     enabled: true
     # -- Storage size (500Gi works for testnet/minimal, increase for mainnet full/archive)
-    size: 2Ti
+    size: 3Ti
     # -- Storage class (empty string uses cluster default)
     storageClass: ""
     # -- Access mode
