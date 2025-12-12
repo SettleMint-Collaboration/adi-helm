@@ -11,6 +11,11 @@ erigon:
   chain: sepolia
   caplin:
     checkpointSyncUrl: "https://sepolia.beaconstate.info/eth/v2/debug/beacon/states/finalized"
+  persistence:
+    # -- Enable persistent storage
+    enabled: true
+    # -- Storage size (500Gi works for testnet/minimal, increase for mainnet full/archive)
+    size: 2Ti
 
 # Genesis configuration - REQUIRED
 # mainNodeRpcUrl is the sequencer endpoint that external nodes proxy transactions to.
