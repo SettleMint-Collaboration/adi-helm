@@ -15,16 +15,15 @@ erigon:
     limits:
       cpu: "16"
       memory: "64Gi"
-  maxPeers: 200
 
 externalNode:
   resources:
     requests:
-      cpu: "4"
-      memory: "8Gi"
+      cpu: "1"
+      memory: "2Gi"
     limits:
-      cpu: "8"
-      memory: "16Gi"
+      cpu: "2"
+      memory: "4Gi"
 
 cloudflared:
   resources:
@@ -35,6 +34,3 @@ cloudflared:
       cpu: "500m"
       memory: "256Mi"
 
-podDisruptionBudget:
-  enabled: true
-  minAvailable: 1
