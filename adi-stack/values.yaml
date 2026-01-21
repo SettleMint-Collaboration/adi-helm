@@ -45,8 +45,14 @@ fullnameOverride: ""
 genesis:
   # -- Bridgehub contract address
   bridgehubAddress: "0x7a38c18a229ef8a0ae7104ba272a46280f2d59cb"
+  # -- Bytecode supplier address
+  bytecodeSupplierAddress: "0x6e369e616dd5a5cb0cd410f541c784033de89042"
   # -- Chain ID
   chainId: "36900"
+  # -- Genesis file bundled in the chart (relative to chart files/)
+  file: "genesis/mainnet.json"
+  # -- Genesis file path inside the container
+  genesisInputPath: "/genesis/genesis.json"
   # -- Main node RPC URL (sequencer endpoint)
   # CRITICAL: This URL enables transaction proxying from external nodes to the sequencer.
   # External nodes do NOT sequence transactions themselves - they forward all

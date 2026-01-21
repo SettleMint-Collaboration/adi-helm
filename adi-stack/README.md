@@ -46,9 +46,12 @@ helm install adi-stack ./adi-helm/adi-stack -f values.yaml
 
 | Parameter                  | Description                               |
 | -------------------------- | ----------------------------------------- |
-| `genesis.bridgehubAddress` | Bridgehub contract address                |
-| `genesis.chainId`          | Chain ID for the network                  |
-| `genesis.mainNodeRpcUrl`   | Main node RPC URL                         |
+| `genesis.bridgehubAddress`        | Bridgehub contract address                |
+| `genesis.bytecodeSupplierAddress` | Bytecode supplier contract address        |
+| `genesis.chainId`                 | Chain ID for the network                  |
+| `genesis.file`                    | Genesis file bundled in the chart         |
+| `genesis.genesisInputPath`        | Genesis file path inside the container    |
+| `genesis.mainNodeRpcUrl`          | Main node RPC URL                         |
 | `l1Rpc.url`                | L1 RPC endpoint URL (if not using Erigon) |
 
 ### Key Configuration Sections

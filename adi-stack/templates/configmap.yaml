@@ -10,5 +10,9 @@ metadata:
   {{- end }}
 data:
   genesis_bridgehub_address: {{ .Values.genesis.bridgehubAddress | quote }}
+  genesis_bytecode_supplier_address: {{ .Values.genesis.bytecodeSupplierAddress | quote }}
   genesis_chain_id: {{ .Values.genesis.chainId | quote }}
   general_main_node_rpc_url: {{ .Values.genesis.mainNodeRpcUrl | quote }}
+  {{- $genesisPath := printf "files/%s" (trimPrefix "files/" .Values.genesis.file) }}
+  genesis.json: |-
+{{- .Files.Get $genesisPath | nindent 4 }}

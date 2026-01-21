@@ -152,11 +152,18 @@ spec:
                 configMapKeyRef:
                   name: {{ include "adi-stack.fullname" . }}-genesis
                   key: genesis_bridgehub_address
+            - name: genesis_bytecode_supplier_address
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "adi-stack.fullname" . }}-genesis
+                  key: genesis_bytecode_supplier_address
             - name: genesis_chain_id
               valueFrom:
                 configMapKeyRef:
                   name: {{ include "adi-stack.fullname" . }}-genesis
                   key: genesis_chain_id
+            - name: genesis_genesis_input_path
+              value: {{ .Values.genesis.genesisInputPath | quote }}
             # CRITICAL: This URL enables transaction proxying to the sequencer.
             # External nodes forward eth_sendRawTransaction to this endpoint.
             # Without it: "Transaction submission not implemented on external nodes"
@@ -179,7 +186,7 @@ spec:
               value: "0.0.0.0:3050"
             - name: status_server_address
               value: "0.0.0.0:3071"
-            - name: general_prometheus_port
+            - name: observability_prometheus_port
               value: "3312"
             - name: RUST_LOG
               value: {{ .Values.externalNode.logLevel | quote }}
@@ -216,6 +223,9 @@ spec:
           volumeMounts:
             - name: chain-data
               mountPath: /chain
+            - name: genesis
+              mountPath: /genesis
+              readOnly: true
             {{- with .Values.externalNode.extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -272,6 +282,12 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       volumes:
+        - name: genesis
+          configMap:
+            name: {{ include "adi-stack.fullname" . }}-genesis
+            items:
+              - key: genesis.json
+                path: genesis.json
         {{- if .Values.proofSync.enabled }}
         - name: sync-script
           configMap:
