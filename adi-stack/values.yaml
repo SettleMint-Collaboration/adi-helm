@@ -277,7 +277,7 @@ externalNode:
     # -- Image digest (preferred over tag for reproducibility)
     digest: "sha256:a0f0658b0ab4320a45b715a4336824a6bb1082962016caacaee4de681974f384"
     # -- Image tag (ignored when digest is set)
-    tag: "v0.12.1-b"
+    tag: "v0.13.0-b"
     # -- Image pull policy
     pullPolicy: IfNotPresent
 
