@@ -44,10 +44,23 @@
           "pattern": "^0x[a-fA-F0-9]{40}$",
           "description": "Bridgehub contract address (Ethereum address format)"
         },
+        "bytecodeSupplierAddress": {
+          "type": "string",
+          "pattern": "^0x[a-fA-F0-9]{40}$",
+          "description": "Bytecode supplier address (Ethereum address format)"
+        },
         "chainId": {
           "type": "string",
           "pattern": "^[0-9]+$",
           "description": "Chain ID for the network"
+        },
+        "file": {
+          "type": "string",
+          "description": "Genesis file bundled in the chart (relative to files/)"
+        },
+        "genesisInputPath": {
+          "type": "string",
+          "description": "Genesis file path inside the container"
         },
         "mainNodeRpcUrl": {
           "type": "string",

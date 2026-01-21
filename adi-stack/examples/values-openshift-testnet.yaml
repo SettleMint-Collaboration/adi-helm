@@ -8,7 +8,9 @@
 # Genesis configuration - REQUIRED
 genesis:
   bridgehubAddress: "0xFd3cE61C65dDd1039e6e9e07FB6D6e16388d1cc7"
+  bytecodeSupplierAddress: "0x101488dfea56c4443476d29a230dcc1ab340be10"
   chainId: "99999"
+  file: "genesis/testnet.json"
   mainNodeRpcUrl: "https://rpc.ab.testnet.adifoundation.ai/"
 
 # Erigon - resources come from performance tier overlay
