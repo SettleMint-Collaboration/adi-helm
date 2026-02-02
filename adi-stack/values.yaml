@@ -405,7 +405,7 @@ cloudflared:
     # -- Image repository
     repository: cloudflare/cloudflared
     # -- Image tag
-    tag: "2025.11.1"
+    tag: "2026.1.2"
     # -- Image pull policy
     pullPolicy: IfNotPresent
 
