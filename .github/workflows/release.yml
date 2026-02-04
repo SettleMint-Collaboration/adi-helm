@@ -81,33 +81,11 @@ jobs:
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 
-      - name: Login to Distr
-        uses: docker/login-action@v3
-        with:
-          registry: pkg.distribution.settlemint.com
-          username: ${{ github.actor }}
-          password: ${{ secrets.DISTR_TOKEN }}
-
       - name: Package Helm chart
         run: helm package adi-stack --destination .
-
-      - name: Push to Distr
-        run: helm push ./adi-stack-*.tgz oci://pkg.distribution.settlemint.com/settlemint
 
       - name: Get chart version
         id: chart-version
         run: |
           VERSION=$(grep '^version:' adi-stack/Chart.yaml | awk '{print $2}')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Create Distr Application Version
-        uses: glasskube/distr-create-version-action@v1
-        with:
-          api-base: "https://distribution.settlemint.com/api/v1"
-          api-token: ${{ secrets.DISTR_TOKEN }}
-          application-id: "bede7057-8e04-4e73-8e6f-97126672d85e"
-          version-name: ${{ steps.chart-version.outputs.version }}
-          chart-type: "oci"
-          chart-url: oci://pkg.distribution.settlemint.com/settlemint/adi-stack
-          chart-version: ${{ steps.chart-version.outputs.version }}
-          base-values-file: ${{ github.workspace }}/adi-stack/values.yaml
