@@ -112,7 +112,7 @@ erigon:
     # -- Image repository
     repository: erigontech/erigon
     # -- Image tag
-    tag: "v3.3.3"
+    tag: "v3.3.4"
     # -- Image pull policy
     pullPolicy: IfNotPresent
 
@@ -281,7 +281,7 @@ externalNode:
     # -- Image repository
     repository: adi-chain/external-node
     # -- Image digest (preferred over tag for reproducibility)
-    digest: "sha256:a0f0658b0ab4320a45b715a4336824a6bb1082962016caacaee4de681974f384"
+    digest: "sha256:50b8479521a5204feb89f33e282129253810a2f4193f459f351b1a03fff4cc77"
     # -- Image tag (ignored when digest is set)
     tag: "v0.13.0-b"
     # -- Image pull policy
