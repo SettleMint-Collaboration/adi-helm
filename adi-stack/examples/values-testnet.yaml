@@ -28,6 +28,7 @@ genesis:
   mainNodeRpcUrl: "https://rpc.ab.testnet.adifoundation.ai"
 
 cloudflared:
+  enabled: false
   # -- Replay endpoint hostname
   replayHostname: "replay.ab.testnet.adifoundation.ai"
 
