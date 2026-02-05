@@ -126,17 +126,6 @@ externalNode:
     storageClass: "" # Use cluster default
 ```
 
-#### Cloudflared TCP Proxy
-
-```yaml
-cloudflared:
-  enabled: true
-  tunnelToken: "" # Set via --set or existingSecret
-  existingSecret:
-    name: ""
-    key: ""
-```
-
 ### Ingress Options
 
 The chart supports three ingress types with auto-detection:

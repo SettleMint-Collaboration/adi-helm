@@ -298,6 +298,10 @@ externalNode:
   # -- API namespaces to expose (EN_API_NAMESPACES)
   apiNamespaces: "eth,net,web3,zks,pubsub,en"
 
+  # -- Sequencer block replay download URL (sequencer_block_replay_download_address)
+  # URL from which the external node downloads block replay data
+  sequencerBlockReplayDownloadAddress: "https://replay.adifoundation.ai"
+
   # -- Persistent storage for blockchain data
   persistence:
     # -- Storage size
@@ -389,57 +393,6 @@ externalNode:
 
   # -- Extra volumes
   extraVolumes: []
-
-# -- Cloudflared TCP Proxy (Deployment)
-cloudflared:
-  # -- Enable cloudflared deployment
-  enabled: true
-
-  # -- Number of replicas
-  replicaCount: 1
-
-  # -- Image configuration
-  image:
-    # -- Image registry
-    registry: docker.io
-    # -- Image repository
-    repository: cloudflare/cloudflared
-    # -- Image tag
-    tag: "2025.11.1"
-    # -- Image pull policy
-    pullPolicy: IfNotPresent
-
-  # -- Replay endpoint hostname
-  replayHostname: "replay.adifoundation.ai"
-
-  # -- Listener port
-  listenerPort: 3053
-
-  # -- Resource requests and limits
-  resources:
-    requests:
-      memory: "64Mi"
-      cpu: "50m"
-    limits:
-      memory: "128Mi"
-      cpu: "100m"
-
-  # -- Pod security context
-  podSecurityContext:
-    runAsNonRoot: true
-    runAsUser: 65532
-    runAsGroup: 65532
-    seccompProfile:
-      type: RuntimeDefault
-
-  # -- Container security context
-  containerSecurityContext:
-    allowPrivilegeEscalation: false
-    readOnlyRootFilesystem: true
-    runAsNonRoot: true
-    capabilities:
-      drop:
-        - ALL
 
 # -- Proof Sync (Deployment)
 proofSync:

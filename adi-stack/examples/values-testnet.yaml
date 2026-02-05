@@ -27,11 +27,6 @@ genesis:
   file: "genesis/testnet.json"
   mainNodeRpcUrl: "https://rpc.ab.testnet.adifoundation.ai"
 
-cloudflared:
-  enabled: false
-  # -- Replay endpoint hostname
-  replayHostname: "replay.ab.testnet.adifoundation.ai"
-
 # Disable proof-sync for testnet (mainnet uses https://adimainnet.blob.core.windows.net/proofs)
 proofSync:
   storageUrl: "https://adiproofs.blob.core.windows.net/shared"
@@ -53,3 +48,6 @@ ingress:
   tls:
     enabled: true
     secretName: "" # Let cert-manager create it, or specify existing secret
+
+externalNode:
+  sequencerBlockReplayDownloadAddress: "https://replay.ab.testnet.adifoundation.ai"

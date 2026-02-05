@@ -24,12 +24,3 @@ externalNode:
     limits:
       cpu: "1"
       memory: "2Gi"
-
-cloudflared:
-  resources:
-    requests:
-      cpu: "50m"
-      memory: "64Mi"
-    limits:
-      cpu: "100m"
-      memory: "128Mi"

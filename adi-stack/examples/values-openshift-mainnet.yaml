@@ -36,13 +36,6 @@ openshift:
 
 # External node - resources come from performance tier overlay
 
-# Cloudflared
-cloudflared:
-  enabled: true
-  existingSecret:
-    name: cloudflared-credentials
-    key: tunnel-token
-
 # Proof sync - storageUrl inherited from values.yaml (mainnet base)
 proofSync:
   enabled: true

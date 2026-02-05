@@ -16,14 +16,18 @@
         },
         "imagePullSecrets": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "Global image pull secrets"
         }
       }
     },
     "imagePullSecrets": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "description": "Image pull secrets (can also use global.imagePullSecrets)"
     },
     "nameOverride": {
@@ -110,13 +114,21 @@
         },
         "chain": {
           "type": "string",
-          "enum": ["mainnet", "sepolia", "holesky"],
+          "enum": [
+            "mainnet",
+            "sepolia",
+            "holesky"
+          ],
           "default": "mainnet",
           "description": "Ethereum network"
         },
         "pruneMode": {
           "type": "string",
-          "enum": ["archive", "full", "minimal"],
+          "enum": [
+            "archive",
+            "full",
+            "minimal"
+          ],
           "default": "full",
           "description": "Prune mode: archive (~2TB), full (~1TB), minimal (~500GB)"
         },
@@ -209,7 +221,9 @@
         },
         "bootnodes": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "Custom bootnodes"
         },
         "persistence": {
@@ -251,7 +265,9 @@
         },
         "extraArgs": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "Extra arguments for erigon command"
         }
       }
@@ -282,7 +298,10 @@
           "properties": {
             "type": {
               "type": "string",
-              "enum": ["RollingUpdate", "OnDelete"],
+              "enum": [
+                "RollingUpdate",
+                "OnDelete"
+              ],
               "default": "RollingUpdate",
               "description": "Type of update strategy"
             }
@@ -321,65 +340,32 @@
           "items": {
             "type": "object",
             "properties": {
-              "name": { "type": "string" },
-              "value": { "type": "string" },
-              "valueFrom": { "type": "object" }
+              "name": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              },
+              "valueFrom": {
+                "type": "object"
+              }
             }
           },
           "description": "Extra environment variables"
         },
         "extraVolumeMounts": {
           "type": "array",
-          "items": { "type": "object" },
+          "items": {
+            "type": "object"
+          },
           "description": "Extra volume mounts"
         },
         "extraVolumes": {
           "type": "array",
-          "items": { "type": "object" },
+          "items": {
+            "type": "object"
+          },
           "description": "Extra volumes"
-        }
-      }
-    },
-    "cloudflared": {
-      "type": "object",
-      "description": "Cloudflared TCP Proxy (Deployment) configuration",
-      "additionalProperties": true,
-      "properties": {
-        "enabled": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable cloudflared deployment"
-        },
-        "replicaCount": {
-          "type": "integer",
-          "minimum": 1,
-          "default": 1,
-          "description": "Number of replicas"
-        },
-        "image": {
-          "$ref": "#/definitions/image",
-          "description": "Image configuration"
-        },
-        "replayHostname": {
-          "type": "string",
-          "description": "Replay endpoint hostname"
-        },
-        "listenerPort": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 65535,
-          "default": 3053,
-          "description": "Listener port"
-        },
-        "resources": {
-          "$ref": "#/definitions/resources",
-          "description": "Resource requests and limits"
-        },
-        "podSecurityContext": {
-          "$ref": "#/definitions/podSecurityContext"
-        },
-        "containerSecurityContext": {
-          "$ref": "#/definitions/containerSecurityContext"
         }
       }
     },
@@ -416,7 +402,10 @@
         },
         "deleteDestination": {
           "type": "string",
-          "enum": ["true", "false"],
+          "enum": [
+            "true",
+            "false"
+          ],
           "default": "false",
           "description": "Delete destination files not in source"
         },
@@ -453,7 +442,9 @@
         },
         "annotations": {
           "type": "object",
-          "additionalProperties": { "type": "string" },
+          "additionalProperties": {
+            "type": "string"
+          },
           "description": "Annotations for service account (e.g., for cloud workload identity)"
         }
       }
@@ -470,7 +461,9 @@
         },
         "rules": {
           "type": "array",
-          "items": { "type": "object" },
+          "items": {
+            "type": "object"
+          },
           "description": "Additional RBAC rules"
         }
       }
@@ -482,7 +475,12 @@
       "properties": {
         "type": {
           "type": "string",
-          "enum": ["ClusterIP", "NodePort", "LoadBalancer", "ExternalName"],
+          "enum": [
+            "ClusterIP",
+            "NodePort",
+            "LoadBalancer",
+            "ExternalName"
+          ],
           "default": "ClusterIP",
           "description": "Service type"
         },
@@ -518,12 +516,17 @@
         },
         "annotations": {
           "type": "object",
-          "additionalProperties": { "type": "string" },
+          "additionalProperties": {
+            "type": "string"
+          },
           "description": "Service annotations (e.g., for cloud load balancer configuration)"
         },
         "sessionAffinity": {
           "type": "string",
-          "enum": ["None", "ClientIP"],
+          "enum": [
+            "None",
+            "ClientIP"
+          ],
           "default": "None",
           "description": "Session affinity"
         }
@@ -536,7 +539,12 @@
       "properties": {
         "type": {
           "type": "string",
-          "enum": ["ingress", "gateway", "route", "auto"],
+          "enum": [
+            "ingress",
+            "gateway",
+            "route",
+            "auto"
+          ],
           "default": "auto",
           "description": "Ingress type: ingress, gateway, route, or auto (detect platform)"
         },
@@ -556,7 +564,11 @@
         },
         "pathType": {
           "type": "string",
-          "enum": ["Prefix", "Exact", "ImplementationSpecific"],
+          "enum": [
+            "Prefix",
+            "Exact",
+            "ImplementationSpecific"
+          ],
           "default": "Prefix",
           "description": "Path type"
         },
@@ -586,7 +598,9 @@
             },
             "annotations": {
               "type": "object",
-              "additionalProperties": { "type": "string" },
+              "additionalProperties": {
+                "type": "string"
+              },
               "description": "Ingress annotations"
             }
           }
@@ -617,25 +631,38 @@
           "properties": {
             "termination": {
               "type": "string",
-              "enum": ["edge", "passthrough", "reencrypt"],
+              "enum": [
+                "edge",
+                "passthrough",
+                "reencrypt"
+              ],
               "default": "edge",
               "description": "TLS termination type"
             },
             "insecureEdgeTerminationPolicy": {
               "type": "string",
-              "enum": ["Allow", "Redirect", "None"],
+              "enum": [
+                "Allow",
+                "Redirect",
+                "None"
+              ],
               "default": "Redirect",
               "description": "Insecure edge termination policy"
             },
             "wildcardPolicy": {
               "type": "string",
-              "enum": ["None", "Subdomain"],
+              "enum": [
+                "None",
+                "Subdomain"
+              ],
               "default": "None",
               "description": "Wildcard policy"
             },
             "annotations": {
               "type": "object",
-              "additionalProperties": { "type": "string" },
+              "additionalProperties": {
+                "type": "string"
+              },
               "description": "Route annotations"
             }
           }
@@ -677,12 +704,16 @@
         },
         "ingress": {
           "type": "array",
-          "items": { "type": "object" },
+          "items": {
+            "type": "object"
+          },
           "description": "Ingress rules"
         },
         "egress": {
           "type": "array",
-          "items": { "type": "object" },
+          "items": {
+            "type": "object"
+          },
           "description": "Egress rules"
         }
       }
@@ -698,11 +729,17 @@
           "description": "Enable PDB"
         },
         "minAvailable": {
-          "type": ["integer", "string"],
+          "type": [
+            "integer",
+            "string"
+          ],
           "description": "Minimum available pods"
         },
         "maxUnavailable": {
-          "type": ["integer", "string"],
+          "type": [
+            "integer",
+            "string"
+          ],
           "description": "Maximum unavailable pods (alternative to minAvailable)"
         }
       }
@@ -733,7 +770,9 @@
             },
             "labels": {
               "type": "object",
-              "additionalProperties": { "type": "string" },
+              "additionalProperties": {
+                "type": "string"
+              },
               "description": "Additional labels for ServiceMonitor"
             },
             "namespace": {
@@ -742,12 +781,16 @@
             },
             "metricRelabelings": {
               "type": "array",
-              "items": { "type": "object" },
+              "items": {
+                "type": "object"
+              },
               "description": "Metric relabeling configs"
             },
             "relabelings": {
               "type": "array",
-              "items": { "type": "object" },
+              "items": {
+                "type": "object"
+              },
               "description": "Relabeling configs"
             }
           }
@@ -763,12 +806,16 @@
             },
             "labels": {
               "type": "object",
-              "additionalProperties": { "type": "string" },
+              "additionalProperties": {
+                "type": "string"
+              },
               "description": "Additional labels for PrometheusRule"
             },
             "rules": {
               "type": "array",
-              "items": { "type": "object" },
+              "items": {
+                "type": "object"
+              },
               "description": "Alerting rules"
             }
           }
@@ -789,7 +836,9 @@
     },
     "topologySpreadConstraints": {
       "type": "array",
-      "items": { "type": "object" },
+      "items": {
+        "type": "object"
+      },
       "description": "Topology spread constraints"
     },
     "priorityClassName": {
@@ -798,7 +847,9 @@
     },
     "podAnnotations": {
       "type": "object",
-      "additionalProperties": { "type": "string" },
+      "additionalProperties": {
+        "type": "string"
+      },
       "description": "Pod annotations (applied to all pods)"
     },
     "terminationGracePeriodSeconds": {
@@ -809,17 +860,23 @@
     },
     "commonLabels": {
       "type": "object",
-      "additionalProperties": { "type": "string" },
+      "additionalProperties": {
+        "type": "string"
+      },
       "description": "Common labels for all resources"
     },
     "commonAnnotations": {
       "type": "object",
-      "additionalProperties": { "type": "string" },
+      "additionalProperties": {
+        "type": "string"
+      },
       "description": "Common annotations for all resources"
     },
     "extraObjects": {
       "type": "array",
-      "items": { "type": "object" },
+      "items": {
+        "type": "object"
+      },
       "description": "Extra objects to deploy"
     }
   },
@@ -842,7 +899,11 @@
         },
         "pullPolicy": {
           "type": "string",
-          "enum": ["Always", "IfNotPresent", "Never"],
+          "enum": [
+            "Always",
+            "IfNotPresent",
+            "Never"
+          ],
           "default": "IfNotPresent",
           "description": "Image pull policy"
         }
@@ -868,18 +929,26 @@
         },
         "accessMode": {
           "type": "string",
-          "enum": ["ReadWriteOnce", "ReadOnlyMany", "ReadWriteMany"],
+          "enum": [
+            "ReadWriteOnce",
+            "ReadOnlyMany",
+            "ReadWriteMany"
+          ],
           "default": "ReadWriteOnce",
           "description": "Access mode"
         },
         "annotations": {
           "type": "object",
-          "additionalProperties": { "type": "string" },
+          "additionalProperties": {
+            "type": "string"
+          },
           "description": "Annotations for PVC"
         },
         "labels": {
           "type": "object",
-          "additionalProperties": { "type": "string" },
+          "additionalProperties": {
+            "type": "string"
+          },
           "description": "Labels for PVC"
         }
       }
@@ -965,11 +1034,15 @@
           "properties": {
             "drop": {
               "type": "array",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "add": {
               "type": "array",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             }
           }
         }
@@ -1008,7 +1081,9 @@
     },
     "nodeSelector": {
       "type": "object",
-      "additionalProperties": { "type": "string" },
+      "additionalProperties": {
+        "type": "string"
+      },
       "description": "Node selector"
     },
     "tolerations": {
@@ -1017,17 +1092,30 @@
         "type": "object",
         "additionalProperties": true,
         "properties": {
-          "key": { "type": "string" },
+          "key": {
+            "type": "string"
+          },
           "operator": {
             "type": "string",
-            "enum": ["Exists", "Equal"]
+            "enum": [
+              "Exists",
+              "Equal"
+            ]
           },
-          "value": { "type": "string" },
+          "value": {
+            "type": "string"
+          },
           "effect": {
             "type": "string",
-            "enum": ["NoSchedule", "PreferNoSchedule", "NoExecute"]
+            "enum": [
+              "NoSchedule",
+              "PreferNoSchedule",
+              "NoExecute"
+            ]
           },
-          "tolerationSeconds": { "type": "integer" }
+          "tolerationSeconds": {
+            "type": "integer"
+          }
         }
       },
       "description": "Tolerations"
@@ -1036,9 +1124,15 @@
       "type": "object",
       "additionalProperties": true,
       "properties": {
-        "nodeAffinity": { "type": "object" },
-        "podAffinity": { "type": "object" },
-        "podAntiAffinity": { "type": "object" }
+        "nodeAffinity": {
+          "type": "object"
+        },
+        "podAffinity": {
+          "type": "object"
+        },
+        "podAntiAffinity": {
+          "type": "object"
+        }
       },
       "description": "Affinity rules"
     }
