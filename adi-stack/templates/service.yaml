@@ -36,23 +36,3 @@ spec:
     {{- include "adi-stack.selectorLabels" . | nindent 4 }}
     app.kubernetes.io/component: external-node
 {{- end }}
----
-{{- if .Values.cloudflared.enabled }}
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ include "adi-stack.fullname" . }}-cloudflared
-  labels:
-    {{- include "adi-stack.labels" . | nindent 4 }}
-    app.kubernetes.io/component: cloudflared
-spec:
-  type: ClusterIP
-  ports:
-    - name: tcp-proxy
-      port: {{ .Values.cloudflared.listenerPort }}
-      targetPort: tcp-proxy
-      protocol: TCP
-  selector:
-    {{- include "adi-stack.selectorLabels" . | nindent 4 }}
-    app.kubernetes.io/component: cloudflared
-{{- end }}

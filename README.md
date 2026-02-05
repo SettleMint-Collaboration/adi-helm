@@ -39,7 +39,6 @@ The ADI Stack Helm Chart provides a production-ready deployment solution for run
 - **Performance Tiers** - Pre-configured resource profiles for development, testnet, and production
 - **Flexible Ingress** - Contour HTTPProxy with timeout support for JSON-RPC workloads
 - **Enterprise Security** - OpenShift restricted SCC compatible, Pod Security Standards compliant
-- **Cloudflare Tunnel** - Built-in Cloudflared support for secure external access
 - **Monitoring Ready** - Prometheus ServiceMonitor support out of the box
 
 ## Quick Start

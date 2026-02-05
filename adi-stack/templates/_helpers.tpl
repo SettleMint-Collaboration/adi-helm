@@ -112,17 +112,6 @@ Return the proper image name for external-node
 {{- end -}}
 
 {{/*
-Return the proper image name for cloudflared
-*/}}
-{{- define "adi-stack.cloudflared.image" -}}
-{{- $registry := .Values.cloudflared.image.registry -}}
-{{- if .Values.global.imageRegistry -}}
-{{- $registry = .Values.global.imageRegistry -}}
-{{- end -}}
-{{- printf "%s/%s:%s" $registry .Values.cloudflared.image.repository .Values.cloudflared.image.tag -}}
-{{- end -}}
-
-{{/*
 Return the proper image name for proof-sync
 */}}
 {{- define "adi-stack.proofSync.image" -}}
