@@ -281,9 +281,9 @@ externalNode:
     # -- Image repository
     repository: adi-chain/external-node
     # -- Image digest (preferred over tag for reproducibility)
-    digest: "sha256:50b8479521a5204feb89f33e282129253810a2f4193f459f351b1a03fff4cc77"
+    digest: "sha256:0b128d8f155f41746e0fa4c1dcdc8803d4e7cd7db7fe336a4a6fce7fd9f38242"
     # -- Image tag (ignored when digest is set)
-    tag: "v0.13.0-b"
+    tag: "v0.13.0-b1"
     # -- Image pull policy
     pullPolicy: IfNotPresent
 
