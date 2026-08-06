@@ -1,0 +1,19 @@
+adi-stack/Chart.yaml
+  s_2d9642e72dd3db::t_839c5e02423a9e 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "7134b707a057b4144047bf5342557c878f40b614",
+  "prompts": {},
+  "sessions": {
+    "s_2d9642e72dd3db": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "00164198-2d57-466d-80ac-50384c3989a4",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Oleksandr Hrab <oleksandr@settlemint.com>"
+    }
+  }
+}
