@@ -1,0 +1,32 @@
+adi-stack/Chart.yaml
+  s_023cd07c8a334e::t_293f8be57632a4 5
+.github/renovate.json
+  s_e916b2927d0b21::t_b45a8a009656b6 24-25,27-28,31-32
+  s_023cd07c8a334e::t_02d7d09d6060b9 26,29-30
+adi-stack/values.yaml
+  s_023cd07c8a334e::t_06119240de99db 115
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "603c5220202f0e78729e6fb87dbef04eff5a51b2",
+  "prompts": {},
+  "sessions": {
+    "s_023cd07c8a334e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "462bd872-f691-4f7e-b4b1-6d37d31c1969",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Oleksandr Hrab <oleksandr@settlemint.com>"
+    },
+    "s_e916b2927d0b21": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8582c306-d624-4633-bfa1-263da0c36d72",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Oleksandr Hrab <oleksandr@settlemint.com>"
+    }
+  }
+}
