@@ -23,7 +23,7 @@
   "rebaseWhen": "conflicted",
   "packageRules": [
     {
-      "description": "Erigon is pinned to v3.3.7; updates are disabled so the pin holds. The allowedVersions filter stays in place for when updates are re-enabled: Erigon publishes placeholder v3.x.9999 dev tags that rank highest in semver but are later deleted from Docker Hub, so only real releases (1-3 digit patch) are acceptable.",
+      "description": "Erigon is pinned to v3.5.4; updates are disabled so the pin holds. The allowedVersions filter stays in place for when updates are re-enabled: Erigon publishes placeholder v3.x.9999 dev tags that rank highest in semver but are later deleted from Docker Hub, so only real releases (1-3 digit patch) are acceptable.",
       "matchDatasources": ["docker"],
       "matchPackageNames": ["erigontech/erigon", "docker.io/erigontech/erigon"],
       "allowedVersions": "/^v\\d+\\.\\d+\\.\\d{1,3}$/",
