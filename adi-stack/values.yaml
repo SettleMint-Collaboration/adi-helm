@@ -112,7 +112,7 @@ erigon:
     # -- Image repository
     repository: erigontech/erigon
     # -- Image tag
-    tag: "v3.3.7"
+    tag: "v3.5.4"
     # -- Image pull policy
     pullPolicy: IfNotPresent
 
