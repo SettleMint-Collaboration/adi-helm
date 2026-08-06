@@ -10,7 +10,7 @@
 erigon:
   chain: sepolia
   caplin:
-    checkpointSyncUrl: "https://sepolia.beaconstate.info/eth/v2/debug/beacon/states/finalized"
+    checkpointSyncUrl: "https://checkpoint-sync.sepolia.ethpandaops.io/eth/v2/debug/beacon/states/finalized"
   persistence:
     # -- Enable persistent storage
     enabled: true

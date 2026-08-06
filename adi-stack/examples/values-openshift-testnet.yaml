@@ -20,7 +20,7 @@ erigon:
   pruneMode: full
   caplin:
     enabled: true
-    checkpointSyncUrl: "https://sepolia.beaconstate.info/eth/v2/debug/beacon/states/finalized"
+    checkpointSyncUrl: "https://checkpoint-sync.sepolia.ethpandaops.io/eth/v2/debug/beacon/states/finalized"
 
 # L1 RPC configuration - Not needed when erigon.enabled=true
 # Uncomment below to use external RPC instead of internal Erigon
