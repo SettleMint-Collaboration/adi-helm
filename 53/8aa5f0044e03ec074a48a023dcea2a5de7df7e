@@ -1,0 +1,20 @@
+.github/workflows/release.yml
+  s_7564194c6d71e7::t_62cad1efcb4c44 84-90,94-96,102-107,109-113
+  s_7564194c6d71e7::t_aa5613393ee6aa 108
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "538aa5f0044e03ec074a48a023dcea2a5de7df7e",
+  "prompts": {},
+  "sessions": {
+    "s_7564194c6d71e7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2701af28-2b4e-42c1-b860-68a5e4210bfc",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Oleksandr Hrab <oleksandr@settlemint.com>"
+    }
+  }
+}
