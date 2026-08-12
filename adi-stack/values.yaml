@@ -30,11 +30,16 @@ global:
   # -- Image registry to use for all images
   imageRegistry: ""
   # -- Image pull secrets for all pods
+  # Accepts either plain secret names or Kubernetes-native objects:
+  #   imagePullSecrets: ["harbor-registry"]
+  #   imagePullSecrets: [{ name: harbor-registry }]
   imagePullSecrets: []
 
 # -- Image pull secrets (can also use global.imagePullSecrets)
+# Accepts either plain secret names or Kubernetes-native objects:
+#   imagePullSecrets: ["harbor-registry"]
+#   imagePullSecrets: [{ name: harbor-registry }]
 imagePullSecrets: []
-  # - harbor-registry
 
 # -- Override chart name
 nameOverride: ""

@@ -261,7 +261,11 @@ Image pull secrets (combining global and local)
 {{- if $pullSecrets }}
 imagePullSecrets:
 {{- range $pullSecrets }}
+{{- if kindIs "string" . }}
   - name: {{ . }}
+{{- else }}
+  - name: {{ .name }}
+{{- end }}
 {{- end }}
 {{- end }}
 {{- end -}}

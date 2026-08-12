@@ -17,18 +17,18 @@
         "imagePullSecrets": {
           "type": "array",
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/imagePullSecret"
           },
-          "description": "Global image pull secrets"
+          "description": "Global image pull secrets. Accepts secret names (\"regcred\") or Kubernetes-native objects ({name: regcred})"
         }
       }
     },
     "imagePullSecrets": {
       "type": "array",
       "items": {
-        "type": "string"
+        "$ref": "#/definitions/imagePullSecret"
       },
-      "description": "Image pull secrets (can also use global.imagePullSecrets)"
+      "description": "Image pull secrets (can also use global.imagePullSecrets). Accepts secret names (\"regcred\") or Kubernetes-native objects ({name: regcred})"
     },
     "nameOverride": {
       "type": "string",
@@ -881,6 +881,25 @@
     }
   },
   "definitions": {
+    "imagePullSecret": {
+      "description": "An image pull secret, either as a plain secret name or as a Kubernetes LocalObjectReference",
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Name of the pull secret in the release namespace"
+            }
+          },
+          "required": ["name"]
+        }
+      ]
+    },
     "image": {
       "type": "object",
       "additionalProperties": true,
