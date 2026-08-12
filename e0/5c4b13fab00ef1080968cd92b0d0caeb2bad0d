@@ -1,0 +1,23 @@
+adi-stack/Chart.yaml
+  s_7564194c6d71e7::t_cb8be79f27cbec 5-6
+adi-stack/values.yaml
+  s_7564194c6d71e7::t_109e35c56fd3ee 280,282,284,286
+adi-stack/README.md
+  s_7564194c6d71e7::t_261130c941c357 115-117
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "e05c4b13fab00ef1080968cd92b0d0caeb2bad0d",
+  "prompts": {},
+  "sessions": {
+    "s_7564194c6d71e7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2701af28-2b4e-42c1-b860-68a5e4210bfc",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Oleksandr Hrab <oleksandr@settlemint.com>"
+    }
+  }
+}
