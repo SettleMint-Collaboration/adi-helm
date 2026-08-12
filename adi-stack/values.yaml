@@ -277,13 +277,13 @@ externalNode:
   # -- Image configuration
   image:
     # -- Image registry
-    registry: harbor.sre.ideasoft.io
+    registry: harbor.sde.adifoundation.ai
     # -- Image repository
-    repository: adi-chain/external-node
+    repository: adi-public/chain/external-node
     # -- Image digest (preferred over tag for reproducibility)
-    digest: "sha256:0b128d8f155f41746e0fa4c1dcdc8803d4e7cd7db7fe336a4a6fce7fd9f38242"
+    digest: "sha256:65bab15bd1f44fe311c70070bb9a728de6cf5f255bd57e42ad15833e256080b5"
     # -- Image tag (ignored when digest is set)
-    tag: "v0.13.0-b1"
+    tag: "v0.13.0-b4"
     # -- Image pull policy
     pullPolicy: IfNotPresent
 
