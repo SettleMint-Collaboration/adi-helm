@@ -1,0 +1,28 @@
+adi-stack/values.yaml
+  s_7564194c6d71e7::t_dd58d5ff7d0d6e 33-35,39-41
+adi-stack/Chart.yaml
+  s_7564194c6d71e7::t_a3b2171617203b 5
+adi-stack/values.schema.json
+  s_7564194c6d71e7::t_bc842f387fecf5 20,22,29,31
+  s_7564194c6d71e7::t_a7df1f94378910 884-902
+adi-stack/templates/_helpers.tpl
+  s_7564194c6d71e7::t_94ae59d5fb37b8 264,266-268
+adi-stack/templates/tests/test-connection.yaml
+  s_7564194c6d71e7::t_1282cb28db2967 11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "969b7ed13597adb84bd68a0f8f6a92a53f13282a",
+  "prompts": {},
+  "sessions": {
+    "s_7564194c6d71e7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2701af28-2b4e-42c1-b860-68a5e4210bfc",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Oleksandr Hrab <oleksandr@settlemint.com>"
+    }
+  }
+}
