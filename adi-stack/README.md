@@ -112,8 +112,9 @@ When `fallback.enabled=true`:
 ```yaml
 externalNode:
   image:
-    repository: harbor.sre.ideasoft.io/adi-chain/external-node
-    tag: "latest"
+    registry: harbor.sde.adifoundation.ai
+    repository: adi-public/chain/external-node
+    tag: "v0.13.0-b4"
   resources:
     requests:
       memory: "4Gi"
