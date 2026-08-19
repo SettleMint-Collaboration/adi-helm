@@ -100,6 +100,26 @@ spec:
           image: {{ include "adi-stack.externalNode.image" . }}
           imagePullPolicy: {{ .Values.externalNode.image.pullPolicy }}
           workingDir: /app
+          {{- if .Values.externalNode.network.perOrdinalKeys.enabled }}
+          # The node's p2p identity is derived from network_secret_key, but a StatefulSet
+          # renders one pod template for every replica. Selecting the key by ordinal at
+          # startup is what lets more than one external node peer with the bootnode.
+          command:
+            - /bin/sh
+            - -c
+          args:
+            - |
+              set -eu
+              ordinal="${HOSTNAME##*-}"
+              key_file="/p2p-keys/${ordinal}"
+              if [ ! -r "$key_file" ]; then
+                echo "no p2p secret key for ordinal ${ordinal} at ${key_file}" >&2
+                exit 1
+              fi
+              network_secret_key="$(cat "$key_file")"
+              export network_secret_key
+              exec {{ .Values.externalNode.network.perOrdinalKeys.entrypoint }}
+          {{- end }}
           ports:
             - name: rpc
               containerPort: 3050
@@ -226,6 +246,11 @@ spec:
             - name: genesis
               mountPath: /genesis
               readOnly: true
+            {{- if .Values.externalNode.network.perOrdinalKeys.enabled }}
+            - name: p2p-keys
+              mountPath: /p2p-keys
+              readOnly: true
+            {{- end }}
             {{- with .Values.externalNode.extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -293,6 +318,12 @@ spec:
           configMap:
             name: {{ include "adi-stack.fullname" . }}-sync-script
             defaultMode: 0755
+        {{- end }}
+        {{- if .Values.externalNode.network.perOrdinalKeys.enabled }}
+        - name: p2p-keys
+          secret:
+            secretName: {{ .Values.externalNode.network.perOrdinalKeys.existingSecret | default (printf "%s-external-node-p2p" (include "adi-stack.fullname" .)) }}
+            defaultMode: 0400
         {{- end }}
         {{- with .Values.externalNode.extraVolumes }}
         {{- toYaml . | nindent 8 }}

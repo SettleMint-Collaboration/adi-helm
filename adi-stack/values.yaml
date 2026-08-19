@@ -297,6 +297,27 @@ externalNode:
     # -- Type of update strategy (RollingUpdate or OnDelete)
     type: RollingUpdate
 
+  # -- P2P networking. Required from zksync-os v0.16 onward, where block replay moved from
+  # an HTTP download endpoint to the devp2p network. Enable it via extraEnv
+  # (network_enabled, network_host, network_port, network_boot_nodes).
+  network:
+    # -- Give each StatefulSet ordinal its own p2p identity. The identity is derived from
+    # network_secret_key, and a StatefulSet renders a single pod template, so without this
+    # every replica presents the same identity: only one of them can hold a connection to
+    # the bootnode and the others silently receive no block replays. Leave disabled for a
+    # single replica, or when supplying network_secret_key directly through extraEnv.
+    perOrdinalKeys:
+      # -- Enable per-ordinal p2p secret keys
+      enabled: false
+      # -- Secret keys, one per ordinal (index 0 is used by replica 0, and so on).
+      # Provide at least as many entries as replicaCount.
+      keys: []
+      # -- Use an existing Secret instead of rendering one from `keys`. Its data keys must
+      # be the ordinals: "0", "1", ...
+      existingSecret: ""
+      # -- Command exec'd after the ordinal's key is exported. Matches the image entrypoint.
+      entrypoint: /usr/bin/tini -- zksync-os-server
+
   # -- Log level (RUST_LOG format)
   logLevel: "info,zksync_os_server=info,zksync_os_sequencer=info,zksync_os_merkle_tree=info,zksync_os_priority_tree=info,zksync_os_server::prover_api=info"
 
