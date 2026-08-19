@@ -251,21 +251,29 @@ capabilities:
 Image pull secrets (combining global and local)
 */}}
 {{- define "adi-stack.imagePullSecrets" -}}
-{{- $pullSecrets := list }}
-{{- range .Values.global.imagePullSecrets }}
-{{- $pullSecrets = append $pullSecrets . }}
-{{- end }}
-{{- range .Values.imagePullSecrets }}
-{{- $pullSecrets = append $pullSecrets . }}
-{{- end }}
-{{- if $pullSecrets }}
-imagePullSecrets:
-{{- range $pullSecrets }}
+{{- /*
+  Normalise to names and de-duplicate. Entries may arrive as plain strings or as
+  Kubernetes-native {name: ...} objects, and the same secret can legitimately appear in
+  both global and local lists — notably when a deployment tool injects its own pull secret
+  into each. Emitting it twice makes server-side apply reject the whole object with
+  "duplicate entries for key [name=...]".
+*/}}
+{{- $names := list }}
+{{- range concat (.Values.global.imagePullSecrets | default list) (.Values.imagePullSecrets | default list) }}
+{{- $name := "" }}
 {{- if kindIs "string" . }}
-  - name: {{ . }}
-{{- else }}
-  - name: {{ .name }}
+{{- $name = . }}
+{{- else if .name }}
+{{- $name = .name }}
 {{- end }}
+{{- if and $name (not (has $name $names)) }}
+{{- $names = append $names $name }}
+{{- end }}
+{{- end }}
+{{- if $names }}
+imagePullSecrets:
+{{- range $names }}
+  - name: {{ . }}
 {{- end }}
 {{- end }}
 {{- end -}}
